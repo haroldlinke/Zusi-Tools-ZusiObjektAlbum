@@ -1,0 +1,21 @@
+﻿<Application x:Class="ZusiObjektAlbum.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ZusiObjektAlbum"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Sovoma.ControlsKit;component/Themes/Generic.xaml"/>
+                <ResourceDictionary Source="/ZusiObjektAlbum;component/Themes/Generic.xaml"/>
+                <ResourceDictionary Source="/ZusiObjektAlbum;component/Themes/Generic.Styles.xaml"/>
+                <ResourceDictionary Source="/ZusiObjektAlbum;component/Themes/Generic.CommandButtonStyle.xaml"/>
+                <ResourceDictionary Source="/ZusiObjektAlbum;component/Themes/Generic.PopupDevil.xaml"/>
+                <ResourceDictionary Source="/ZusiObjektAlbum;component/Themes/Generic.GeometryViewer.xaml"/>
+                <ResourceDictionary Source="/ZusiObjektAlbum;component/Themes/Generic.ObjectViewControl.xaml"/>
+                <ResourceDictionary Source="/ZusiObjektAlbum;component/Themes/Generic.ObjectPropertiesViewer.xaml"/>
+                <ResourceDictionary Source="/ZusiObjektAlbum;component/Themes/Generic.DisplayControl.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

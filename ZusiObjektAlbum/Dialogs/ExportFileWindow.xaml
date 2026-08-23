@@ -1,0 +1,36 @@
+﻿<Window x:Class="ZusiObjektAlbum.Dialogs.ExportFileWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ZusiObjektAlbum.Dialogs"
+        xmlns:m="clr-namespace:ZusiObjektAlbum.Miscellaneous"
+        xmlns:vm="clr-namespace:ZusiObjektAlbum.MVVM"
+        mc:Ignorable="d"
+        x:Name="window"
+        Title="  Exportdatei" Height="225" Width="700" ShowInTaskbar="False" WindowStyle="ToolWindow">
+
+    <Window.DataContext>
+        <Binding Source="{x:Static vm:DataManager.Instance}"/>
+    </Window.DataContext>
+
+    <Window.Topmost>
+        <Binding Path="ExportFile.IsTopmost" Mode="TwoWay"/>
+    </Window.Topmost>
+    
+    <Grid>
+        <ListView x:Name="lvFiles" ItemsSource="{Binding ExportFile.Content}" IsSynchronizedWithCurrentItem="True">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}">
+                        <TextBlock.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem x:Name="miFiles" Command="{x:Static m:ZOACommands.RemoveItemCommand}" />
+                            </ContextMenu>
+                        </TextBlock.ContextMenu>
+                    </TextBlock>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Window>

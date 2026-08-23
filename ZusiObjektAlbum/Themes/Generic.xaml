@@ -1,0 +1,16 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:cv="clr-namespace:ZusiObjektAlbum.Converter"
+    xmlns:slcv="clr-namespace:SovomaLib.Converter;assembly=SovomaLib">
+
+    <slcv:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
+    <slcv:VersionStringConverter x:Key="VersionStringConverter"/>
+    <slcv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    <slcv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+    <slcv:IsNullConverter x:Key="NullConverter"/>
+    <slcv:ReverseBoolConverter x:Key="ReverseBoolConverter"/>
+
+    <!--<SolidColorBrush x:Key="Caption.Background" Color="Maroon"/>-->
+    <SolidColorBrush x:Key="Caption.Background" Color="CornflowerBlue"/>
+</ResourceDictionary>

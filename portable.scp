@@ -1,0 +1,5 @@
+open ftp://webadmin1:n$DvYWFA#6@www.sovoma.de/ 
+cd /downloads
+lcd "D:\development\transfer" 
+put ZusiObjektAlbum.zip 
+exit 

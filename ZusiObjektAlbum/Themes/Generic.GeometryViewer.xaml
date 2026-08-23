@@ -1,0 +1,82 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ZusiObjektAlbum.Controls">
+
+    <local:TextureSizeConverter x:Key="TextureSizeConverter"/>
+
+    <Style TargetType="{x:Type local:GeometryViewer}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:GeometryViewer}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition SharedSizeGroup="A"/>
+                            <ColumnDefinition SharedSizeGroup="B1"/>
+                            <ColumnDefinition SharedSizeGroup="B2"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <local:LoDViewerControl Grid.ColumnSpan="4" DataContext="{Binding LoD0}" HasCaption="True"/>
+                        <local:LoDViewerControl Grid.Row="1" Grid.ColumnSpan="4" DataContext="{Binding LoD1}"/>
+                        <local:LoDViewerControl Grid.Row="2" Grid.ColumnSpan="4" DataContext="{Binding LoD2}"/>
+                        <local:LoDViewerControl Grid.Row="3" Grid.ColumnSpan="4" DataContext="{Binding LoD3}"/>
+
+                        <!-- LoD 1..3
+                        <TextBlock Grid.Row="2" Text="LoD 1" Style="{StaticResource PropertyNameStyle}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD1.CountTriangles, Mode=OneWay}" Margin="0,0,1,1" TextAlignment="Center"/>
+                        <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD1.MeshInfos.Count, Mode=OneWay}" Margin="0,0,1,1" TextAlignment="Center"/>
+                        <Grid Grid.Row="2" Grid.Column="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition SharedSizeGroup="C"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition SharedSizeGroup="D"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD1.Range.From, Mode=OneWay}" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource PropertyTextStyle}" Text=" -> "/>
+                            <TextBlock Grid.Column="2" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD1.Range.To, Mode=OneWay}" TextAlignment="Right"/>
+                        </Grid>
+                        <TextBlock Grid.Row="2" Grid.Column="4" Style="{StaticResource PropertyTextStyle}" Text=" "/>
+
+                        <TextBlock Grid.Row="3" Text="LoD 2" Style="{StaticResource PropertyNameStyle}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD2.CountTriangles, Mode=OneWay}" Margin="0,0,1,1" TextAlignment="Center"/>
+                        <TextBlock Grid.Row="3" Grid.Column="2" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD2.MeshInfos.Count, Mode=OneWay}" Margin="0,0,1,1" TextAlignment="Center"/>
+                        <Grid Grid.Row="3" Grid.Column="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition SharedSizeGroup="C"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition SharedSizeGroup="D"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD2.Range.From, Mode=OneWay}" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource PropertyTextStyle}" Text=" -> "/>
+                            <TextBlock Grid.Column="2" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD2.Range.To, Mode=OneWay}" TextAlignment="Right"/>
+                        </Grid>
+                        <TextBlock Grid.Row="3" Grid.Column="4" Style="{StaticResource PropertyTextStyle}" Text=" "/>
+
+                        <TextBlock Grid.Row="4" Text="LoD 3" Style="{StaticResource PropertyNameStyle}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD3.CountTriangles, Mode=OneWay}" Margin="0,0,1,1" TextAlignment="Center"/>
+                        <TextBlock Grid.Row="4" Grid.Column="2" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD3.MeshInfos.Count, Mode=OneWay}" Margin="0,0,1,1" TextAlignment="Center"/>
+                        <Grid Grid.Row="4" Grid.Column="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition SharedSizeGroup="C"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition SharedSizeGroup="D"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD3.Range.From, Mode=OneWay}" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource PropertyTextStyle}" Text=" -> "/>
+                            <TextBlock Grid.Column="2" Style="{StaticResource PropertyTextStyle}" Text="{Binding LoD3.Range.To, Mode=OneWay}" TextAlignment="Right"/>
+                        </Grid>
+                        <TextBlock Grid.Row="4" Grid.Column="4" Style="{StaticResource PropertyTextStyle}" Text=" "/>
+                        -->
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>ZusiObjektAlbum</RootNamespace>
+    <AssemblyName>ZusiObjektAlbum</AssemblyName>
+    <ApplicationIcon>mainicon.ico</ApplicationIcon>
+    <Deterministic>true</Deterministic>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="DDSLib, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DDSLib.6.2.0\lib\net48\DDSLib.dll</HintPath>
+    </Reference>
+    <Reference Include="DDSLib.WPF, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DDSLib.WPF.6.2.0\lib\net48\DDSLib.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="log4net, Version=3.4.0.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.3.4.0\lib\net462\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.HashCode, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.HashCode.6.0.0\lib\net462\Microsoft.Bcl.HashCode.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAPICodePack, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.WindowsAPICodePack-Core.1.1.0.2\lib\Microsoft.WindowsAPICodePack.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAPICodePack.Shell, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.WindowsAPICodePack-Shell.1.1.0.0\lib\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAPICodePack.ShellExtensions, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.WindowsAPICodePack-Shell.1.1.0.0\lib\Microsoft.WindowsAPICodePack.ShellExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Sovoma, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sovoma.6.2.0\lib\net48\Sovoma.dll</HintPath>
+    </Reference>
+    <Reference Include="Sovoma.ControlsKit, Version=1.8.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sovoma.Controlskit.1.8.0.2\lib\net472\Sovoma.ControlsKit.dll</HintPath>
+    </Reference>
+    <Reference Include="Sovoma.WPF, Version=6.7.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sovoma.WPF.6.7.3\lib\net48\Sovoma.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="SovomaLib, Version=3.33.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SovomaLib.3.33.0\lib\net472\SovomaLib.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ServiceModel.Duplex, Version=4.10.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ServiceModel.Duplex.4.10.2\lib\net461\System.ServiceModel.Duplex.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ServiceModel.Primitives, Version=4.10.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ServiceModel.Primitives.4.10.2\lib\net461\System.ServiceModel.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="WPFTreeViewLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\wpftreeviewlib.1.0.0\lib\net461\WPFTreeViewLib.dll</HintPath>
+    </Reference>
+    <Reference Include="ZusiKlassenLib, Version=6.4.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ZusiKlassenLib.6.4.5\lib\net48\ZusiKlassenLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="App.config" />
+    <Resource Include="mainicon.ico" />
+  </ItemGroup>
+</Project>

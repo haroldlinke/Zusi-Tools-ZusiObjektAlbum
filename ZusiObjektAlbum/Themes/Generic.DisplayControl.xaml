@@ -1,0 +1,62 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ZusiObjektAlbum.Controls">
+
+    <Style x:Key="SectionToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Width" Value="12"/>
+        <Setter Property="Height" Value="12"/>
+        <Setter Property="Foreground" Value="GhostWhite"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Grid>
+                        <Path x:Name="arrow_down" Stretch="Fill" Fill="{TemplateBinding Foreground}" Data="M0,0H1L0.5,1Z"/>
+                        <Path x:Name="arrow_up" Stretch="Fill" Fill="{TemplateBinding Foreground}" Data="M0,1H1L0.5,0Z" Visibility="Collapsed"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="arrow_down" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="arrow_up" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+        
+    <Style TargetType="{x:Type local:DisplayControl}">
+        <Setter Property="Background" Value="{DynamicResource ExpandSite.Background}"/>
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="BorderThickness" Value="1,0,1,1"/>
+        <Setter Property="TitleBackground" Value="{DynamicResource Caption.Background}"/>
+        <Setter Property="TitleForeground" Value="GhostWhite"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:DisplayControl}">
+                    <Border CornerRadius="6,6,0,0" Background="{TemplateBinding TitleBackground}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock DockPanel.Dock="Top" Margin="6,1,3,1" Text="{TemplateBinding Title}" Foreground="{TemplateBinding TitleForeground}"/>
+                            <ToggleButton x:Name="tb" Grid.Column="1" Style="{StaticResource SectionToggleButtonStyle}" Margin="0 0 6 0" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Visibility="{Binding CanExpand, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            <Border Grid.Row="1" Grid.ColumnSpan="2"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Visibility="{Binding IsChecked, ElementName=tb, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <ContentPresenter/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

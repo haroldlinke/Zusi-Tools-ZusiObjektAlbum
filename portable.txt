@@ -1,0 +1,15 @@
+DDSLib.dll
+Handbuch.pdf
+log4net.config
+log4net.dll
+Microsoft.WindowsAPICodePack.dll
+Microsoft.WindowsAPICodePack.Shell.dll
+Microsoft.WindowsAPICodePack.ShellExtensions.dll
+Sovoma.ControlsKit.dll
+SovomaLib.dll
+WPFTreeViewLib.dll
+ZusiKlassenLib.dll
+ZusiKlassenLib.dll.config
+ZusiObjektAlbum.exe
+ZusiObjektAlbum.exe.config
+ZusiTextureLib.dll

@@ -1,0 +1,39 @@
+﻿<Window x:Class="ZusiObjektAlbum.Dialogs.FolderManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ZusiObjektAlbum.Dialogs"
+        xmlns:sckb="clr-namespace:Sovoma.ControlsKit.Behaviors;assembly=Sovoma.ControlsKit"
+        mc:Ignorable="d"
+        Title="Ordnerverwaltung" Height="450" Width="800" sckb:DialogBehavior.IsDialog="True" Background="#FFF0F0F0" SnapsToDevicePixels="True" ShowInTaskbar="False" UseLayoutRounding="True" WindowStartupLocation="CenterOwner">
+
+    <Window.DataContext>
+        <Binding RelativeSource="{RelativeSource Self}"/>
+    </Window.DataContext>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label Content="Diese Ordner werden beim Programmstart automatisch eingelesen:"/>
+        <DataGrid x:Name="dgrdFolders" Grid.Row="1" BorderThickness="0" AutoGenerateColumns="False" IsSynchronizedWithCurrentItem="True" AlternationCount="2" ItemsSource="{Binding Folders}" AllowDrop="True" 
+                  CanUserAddRows="False" CanUserSortColumns="False" DragOver="DgrdFolders_DragOver" Drop="DgrdFolders_Drop">
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Section}" CanUserSort="False" ClipboardContentBinding="{x:Null}" Header="Abschnittsname"/>
+                <DataGridTextColumn Binding="{Binding Item}" CanUserSort="False" ClipboardContentBinding="{x:Null}" Header="Ordnerpfad" IsReadOnly="True"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DockPanel Grid.Row="2" Margin="6">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Command="{x:Static local:FolderManagerWindow.AddFolderCommand}" Style="{StaticResource CommandButtonStyle}"/>
+                <Button Command="{x:Static local:FolderManagerWindow.RemoveFolderCommand}" Margin="3,0,0,0" Style="{StaticResource CommandButtonStyle}"/>
+                <Button Command="{x:Static local:FolderManagerWindow.SaveAndCloseWindowCommand}" Margin="12,0,0,0" Style="{StaticResource CommandButtonStyle}"/>
+                <Button Content="Abbrechen" Margin="3,0,0,0" IsCancel="True" Style="{StaticResource CommandButtonStyle}"/>
+            </StackPanel>
+            <CheckBox Content="Ordner nach dem Speichern sofort neu einlesen" VerticalAlignment="Center" IsChecked="{Binding UpdateFoldersImmediately}"/>
+        </DockPanel>
+    </Grid>
+</Window>
