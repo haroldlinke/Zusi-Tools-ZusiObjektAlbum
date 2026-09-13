@@ -361,3 +361,30 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Visual Studio Code / Rider
+.vscode/
+.idea/
+
+# Test results
+TestResults/
+*.trx
+
+# Resharper
+_ReSharper*/
+*.DotSettings.user
+
+# Logs and temp
+*.log
+*.tmp
+
+# Rider / IDE caches
+*.sln.iml
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# User secrets / credentials (nicht commiten)
+secrets.json
+appsettings.Development.json

@@ -58,6 +58,14 @@
       <HintPath>..\packages\ZusiKlassenLib.6.4.5\lib\net48\ZusiKlassenLib.dll</HintPath>
     </Reference>
   </ItemGroup>
+ <ItemGroup>
+    <!-- CPU-Inferenz, läuft komplett lokal ohne Internetverbindung.
+         Für GPU-Beschleunigung unter Windows alternativ:
+         Microsoft.ML.OnnxRuntime.DirectML -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="4.1.1" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="log4net.config">

@@ -19,9 +19,21 @@ namespace ZusiObjektAlbum
         {
             base.OnStartup(e);
 
-            FrameworkElement.LanguageProperty.OverrideMetadata(
+
+      if (e.Args.Length >= 2 && e.Args[0] == "--export-images")
+      {
+        ZusiObjektAlbum.Similaritysearch.BatchImageExporter.ExportAndIndexAll(e.Args[1], e.Args[2], e.Args[3]);
+        //ZusiObjektAlbum.Similaritysearch.BatchImageExporter.ExportAllParallel(e.Args[1], degreeOfParallelism: 4);
+        Shutdown();
+        return;
+      }
+
+
+      FrameworkElement.LanguageProperty.OverrideMetadata(
                 typeof(FrameworkElement),
                 new FrameworkPropertyMetadata(XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.IetfLanguageTag)));
+
+
         }
     }
 }
