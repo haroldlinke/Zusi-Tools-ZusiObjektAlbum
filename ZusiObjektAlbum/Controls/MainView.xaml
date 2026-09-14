@@ -122,7 +122,9 @@
             <Border Background="{StaticResource PanelBrush}"
                                 CornerRadius="6"
                                 Margin="0,0,4,10"
-                                Padding="10">
+                                Padding="10"
+                    MouseLeftButtonDown="ResultItemBorder_MouseLeftButtonDown"
+                    MouseMove="ResultItemBorder_MouseMove">
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="90" />

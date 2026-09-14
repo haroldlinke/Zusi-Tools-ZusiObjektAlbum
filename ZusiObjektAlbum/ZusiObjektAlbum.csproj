@@ -10,6 +10,12 @@
     <ApplicationIcon>mainicon.ico</ApplicationIcon>
     <Deterministic>true</Deterministic>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Description>ZusiStart</Description>
+    <Copyright>Harold Linke</Copyright>
+    <Authors>Harold Linke</Authors>
+    <Version>8.8.01</Version>
+    <Title>ZusiStart</Title>
+
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DDSLib, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -64,7 +70,9 @@
          Microsoft.ML.OnnxRuntime.DirectML -->
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="4.1.1" />
-  </ItemGroup>
+   <PackageReference Include="Zusisuplib" Version="8.0.1" />
+
+ </ItemGroup>
 
   <ItemGroup>
     <None Include="packages.config" />

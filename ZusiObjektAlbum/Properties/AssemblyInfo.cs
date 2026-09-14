@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ZusiObjektAlbum")]
-[assembly: AssemblyCopyright("Copyright © 2018-2021 Holger Maaß")]
+[assembly: AssemblyCopyright("Copyright © 2018-2026 Holger Maaß, Harold Linke")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -95,4 +95,4 @@ using System.Windows;
 // Automatisches Einlesen nur noch vom DatenOffiziell
 // Landschaften werden zunächst als Dateipfad gespeichert und erst beim Öffnen geparst
 
-[assembly: AssemblyVersion("0.7.0.0")]
+[assembly: AssemblyVersion("8.0.01")]

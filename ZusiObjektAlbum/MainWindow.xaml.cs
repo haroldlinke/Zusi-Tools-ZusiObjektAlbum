@@ -21,11 +21,13 @@ using WPFTreeViewLib;
 using ZusiKlassenLib;
 using ZusiKlassenLib.Common;
 using ZusiKlassenLib.Landscape;
+using ZusiObjektAlbum.Controls;
 using ZusiObjektAlbum.Dialogs;
 using ZusiObjektAlbum.Miscellaneous;
+using ZusiObjektAlbum.ModelDownloader;
 using ZusiObjektAlbum.MVVM;
 using ZusiObjektAlbum.ValidationRules;
-using ZusiObjektAlbum.ModelDownloader;
+using static System.Net.WebRequestMethods;
 
 namespace ZusiObjektAlbum
 {
@@ -139,6 +141,15 @@ namespace ZusiObjektAlbum
           }
         }
       }
+
+      string ObjektAlbumBaseFolder = System.IO.Path.Combine(Zusi.DataPath[2], @"_Tools\ZusiObjektAlbum\");
+      if (!Directory.Exists(ObjektAlbumBaseFolder))
+      {
+        Directory.CreateDirectory(ObjektAlbumBaseFolder);
+      }
+
+      DataManager.Instance.modelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "vision_model.onnx");
+      DataManager.Instance.indexPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "index.bin");
 
       if (!_dataLoadComplete)
       {
@@ -300,7 +311,7 @@ namespace ZusiObjektAlbum
     public void OnCanImportObject(object sender, CanExecuteRoutedEventArgs e)
     {
       DataManager dm = DataManager.Instance;
-      e.CanExecute = !Validation.GetHasError(tbxNewSection1) && !string.IsNullOrEmpty(dm.ObjectFile) && File.Exists(dm.ObjectFile);
+      e.CanExecute = !Validation.GetHasError(tbxNewSection1) && !string.IsNullOrEmpty(dm.ObjectFile) && System.IO.File.Exists(dm.ObjectFile);
     }
 
     //---------------------------------------------------------------------
@@ -439,40 +450,62 @@ namespace ZusiObjektAlbum
     //---------------------------------------------------------------------
     private void OnCopyPathToClipboard(object sender, ExecutedRoutedEventArgs e)
     {
-      ILandscapeObject ll = null;
-      if (e.Parameter == null)
+      try
       {
-        if (tvObjects.SelectedItem is ObjectModel om && om.Object is ILandscapeObject lo)
+        ILandscapeObject ll = null;
+        if (e.Parameter == null)
+        {
+          if (tvObjects.SelectedItem is ObjectModel om && om.Object is ILandscapeObject lo)
+          {
+            ll = lo;
+          }
+        }
+        else if (e.Parameter is ObjectModel om && om.Object is ILandscapeObject lo)
         {
           ll = lo;
         }
-      }
-      else if (e.Parameter is ObjectModel om && om.Object is ILandscapeObject lo)
-      {
-        ll = lo;
-      }
-
-      if (ll != null)
-      {
         string fullpath = null;
-        if (ll is LandscapeObject lo)
+        if (ll != null)
         {
-          fullpath = lo.Filename;
-        }
-        else if (ll is Landschaft l)
-        {
-          fullpath = l.GetDocument().Filename;
-        }
-        DataPathType dtp = DataPathType.Unknown;
-        string filename = Zusi.GetRelativePathOf(fullpath, ref dtp);
-        if (DataManager.Instance.ExportFile.IsActive)
-        {
-          DataManager.Instance.ExportFile.WriteLine(filename);
+
+          if (ll is LandscapeObject lo)
+          {
+            fullpath = lo.Filename;
+          }
+          else if (ll is Landschaft l)
+          {
+            fullpath = l.GetDocument().Filename;
+          }
+          DataPathType dtp = DataPathType.Unknown;
+          string filename = Zusi.GetRelativePathOf(fullpath, ref dtp);
+          if (DataManager.Instance.ExportFile.IsActive)
+          {
+            DataManager.Instance.ExportFile.WriteLine(filename);
+          }
+          else
+          {
+            Clipboard.SetText(filename);
+          }
         }
         else
         {
-          Clipboard.SetText(filename);
+          // similarity search resultitem
+
+          if (e.OriginalSource is ListBoxItem lm && lm.DataContext is ResultItem resultItem)
+          {
+            fullpath = resultItem.SourcePath;
+
+            DataPathType dtp = DataPathType.Unknown;
+            string filename = Zusi.GetRelativePathOf(fullpath, ref dtp);
+            Clipboard.SetText(filename);
+          }
+
         }
+      }
+      catch (Exception ex)
+      {
+        Log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
+        MessageBox.Show(this, ex.Message, "Fehler beim Kopieren des Pfads", MessageBoxButton.OK, MessageBoxImage.Error);
       }
     }
 
@@ -497,10 +530,41 @@ namespace ZusiObjektAlbum
 
     // URLs auf euer Repo anpassen. Für Dateien >100 MB (z.B. das ONNX-Modell)
     // unbedingt eine GitHub-Release-Asset-URL verwenden, nicht raw.githubusercontent.com.
-    private const string OnnxModelUrl = "https://github.com/<user>/<repo>/releases/download/<tag>/vision_model.onnx";
-    private const string IndexUrl = "https://github.com/<user>/<repo>/releases/download/<tag>/index.bin";
+    private const string OnnxModelUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/vision_model.onnx";
+    private const string IndexUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/index.bin";
 
-    private async void OnDownloadModelAndIndex(object sender, RoutedEventArgs e)
+    private async void OnDownloadIndex(object sender, RoutedEventArgs e)
+    {
+      string onnxModel = DataManager.Instance.modelPath;
+      string indexFile = DataManager.Instance.indexPath;
+
+      var progressWindow = new DownloadProgressWindow { Owner = this };
+      progressWindow.Show();
+
+      try
+      {
+        //var onnxProgress = new Progress<int>(p => progressWindow.ReportProgress($"Lade ONNX-Modell... {p}%", p));
+        //await ModelDownloader.ModelDownloader.DownloadFileAsync(OnnxModelUrl, onnxModel, onnxProgress, progressWindow.CancellationToken);
+
+        var indexProgress = new Progress<int>(p => progressWindow.ReportProgress($"Lade index.bin... {p}%", p));
+        await ModelDownloader.ModelDownloader.DownloadFileAsync(IndexUrl, indexFile, indexProgress, progressWindow.CancellationToken);
+
+        progressWindow.Close();
+        MessageBox.Show(this, "Index wurde erfolgreich heruntergeladen.", "Fertig",
+            MessageBoxButton.OK, MessageBoxImage.Information);
+      }
+      catch (OperationCanceledException)
+      {
+        progressWindow.Close();
+      }
+      catch (Exception ex)
+      {
+        progressWindow.Close();
+        MessageBox.Show(this, ex.Message, "Fehler beim Download", MessageBoxButton.OK, MessageBoxImage.Error);
+      }
+    }
+
+    private async void OnDownloadModel(object sender, RoutedEventArgs e)
     {
       string onnxModel = DataManager.Instance.modelPath;
       string indexFile = DataManager.Instance.indexPath;
@@ -513,11 +577,11 @@ namespace ZusiObjektAlbum
         var onnxProgress = new Progress<int>(p => progressWindow.ReportProgress($"Lade ONNX-Modell... {p}%", p));
         await ModelDownloader.ModelDownloader.DownloadFileAsync(OnnxModelUrl, onnxModel, onnxProgress, progressWindow.CancellationToken);
 
-        var indexProgress = new Progress<int>(p => progressWindow.ReportProgress($"Lade index.bin... {p}%", p));
-        await ModelDownloader.ModelDownloader.DownloadFileAsync(IndexUrl, indexFile, indexProgress, progressWindow.CancellationToken);
+        //var indexProgress = new Progress<int>(p => progressWindow.ReportProgress($"Lade index.bin... {p}%", p));
+        //await ModelDownloader.ModelDownloader.DownloadFileAsync(IndexUrl, indexFile, indexProgress, progressWindow.CancellationToken);
 
         progressWindow.Close();
-        MessageBox.Show(this, "Modell und Index wurden erfolgreich heruntergeladen.", "Fertig",
+        MessageBox.Show(this, "Modell wurde erfolgreich heruntergeladen.", "Fertig",
             MessageBoxButton.OK, MessageBoxImage.Information);
       }
       catch (OperationCanceledException)
@@ -528,6 +592,78 @@ namespace ZusiObjektAlbum
       {
         progressWindow.Close();
         MessageBox.Show(this, ex.Message, "Fehler beim Download", MessageBoxButton.OK, MessageBoxImage.Error);
+      }
+    }
+
+    private Point _dragStartPoint;
+
+    private void ResultItemBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+      _dragStartPoint = e.GetPosition(null);
+    }
+
+    private void ResultItemBorder_MouseMove(object sender, MouseEventArgs e)
+    {
+      if (e.LeftButton != MouseButtonState.Pressed)
+      {
+        return;
+      }
+
+      Point currentPosition = e.GetPosition(null);
+      Vector diff = _dragStartPoint - currentPosition;
+
+      bool draggedFarEnough =
+          Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+          Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance;
+
+      if (!draggedFarEnough)
+      {
+        return;
+      }
+
+      if (sender is not Grid element || element.DataContext is not Zusi3DModel item)
+      {
+        return;
+      }
+
+      try
+      {
+        ILandscapeObject ll = null;
+        string fullpath = null;
+        if (item.ObjectModel is ObjectModel om && om.Object is ILandscapeObject lo)
+        {
+          ll = lo;
+        }
+        
+        if (ll != null)
+        {
+
+          if (ll is LandscapeObject lo1)
+          {
+            fullpath = lo1.Filename;
+          }
+          else if (ll is Landschaft l)
+          {
+            fullpath = l.GetDocument().Filename;
+          }
+
+        }
+
+      if (string.IsNullOrEmpty(fullpath) || !System.IO.File.Exists(fullpath))
+      {
+        return;
+      }
+
+      // Exakt das Format, das Explorer beim Datei-Ziehen erzeugt (CF_HDROP) -
+      // jede Anwendung, die Drag&Drop vom Explorer akzeptiert, akzeptiert das auch.
+      var dataObject = new DataObject(DataFormats.FileDrop, new[] { fullpath });
+      DragDrop.DoDragDrop(element, dataObject, DragDropEffects.Copy);
+
+      }
+      catch (Exception ex)
+      {
+        Log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
+        MessageBox.Show(this, ex.Message, "Fehler beim Kopieren des Pfads", MessageBoxButton.OK, MessageBoxImage.Error);
       }
     }
 

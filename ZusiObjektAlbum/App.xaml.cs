@@ -28,6 +28,8 @@ namespace ZusiObjektAlbum
         return;
       }
 
+      Startprog.initprog();
+
 
       FrameworkElement.LanguageProperty.OverrideMetadata(
                 typeof(FrameworkElement),

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using ZusiKlassenLib.Landscape;
 using ZusiObjektAlbum.Core;
@@ -259,5 +260,46 @@ public partial class MainView : UserControl
     }
 
     DataManager.Instance.SelectedObject = zusi3DModel;
+  }
+  private Point _dragStartPoint;
+
+  private void ResultItemBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+  {
+    _dragStartPoint = e.GetPosition(null);
+  }
+
+  private void ResultItemBorder_MouseMove(object sender, MouseEventArgs e)
+  {
+    if (e.LeftButton != MouseButtonState.Pressed)
+    {
+      return;
+    }
+
+    Point currentPosition = e.GetPosition(null);
+    Vector diff = _dragStartPoint - currentPosition;
+
+    bool draggedFarEnough =
+        Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+        Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance;
+
+    if (!draggedFarEnough)
+    {
+      return;
+    }
+
+    if (sender is not FrameworkElement element || element.DataContext is not ResultItem item)
+    {
+      return;
+    }
+
+    if (string.IsNullOrEmpty(item.SourcePath) || !File.Exists(item.SourcePath))
+    {
+      return;
+    }
+
+    // Exakt das Format, das Explorer beim Datei-Ziehen erzeugt (CF_HDROP) -
+    // jede Anwendung, die Drag&Drop vom Explorer akzeptiert, akzeptiert das auch.
+    var dataObject = new DataObject(DataFormats.FileDrop, new[] { item.SourcePath });
+    DragDrop.DoDragDrop(element, dataObject, DragDropEffects.Copy);
   }
 }

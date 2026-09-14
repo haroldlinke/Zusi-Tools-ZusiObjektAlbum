@@ -2,7 +2,7 @@
   "profiles": {
     "ZusiObjektAlbum": {
       "commandName": "Project",
-      "commandLineArgs": "--export-imagesx \"D:\\Zusi\\ObjectImages\" \"D:\\Zusi\\Onnx\\vision_model.onnx\" \"D:\\Zusi\\index\\index.bin\""
+      "commandLineArgs": "*Installation*"
     }
   }
 }
