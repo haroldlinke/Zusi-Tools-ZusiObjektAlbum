@@ -13,8 +13,10 @@
     <Description>ZusiStart</Description>
     <Copyright>Harold Linke</Copyright>
     <Authors>Harold Linke</Authors>
-    <Version>8.8.01</Version>
+    <Version>8.0.2</Version>
     <Title>ZusiStart</Title>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyVersion></AssemblyVersion>
 
   </PropertyGroup>
   <ItemGroup>
@@ -68,7 +70,9 @@
     <!-- CPU-Inferenz, läuft komplett lokal ohne Internetverbindung.
          Für GPU-Beschleunigung unter Windows alternativ:
          Microsoft.ML.OnnxRuntime.DirectML -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0">
+      
+    </PackageReference>
     <PackageReference Include="SixLabors.ImageSharp" Version="4.1.1" />
    <PackageReference Include="Zusisuplib" Version="8.0.1" />
 

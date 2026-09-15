@@ -149,6 +149,7 @@ namespace ZusiObjektAlbum
       }
 
       DataManager.Instance.modelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "vision_model.onnx");
+      DataManager.Instance.rembgModelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "u2net.onnx");
       DataManager.Instance.indexPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "index.bin");
 
       if (!_dataLoadComplete)
@@ -385,8 +386,8 @@ namespace ZusiObjektAlbum
     private async void OnIndexObjects(object sender, ExecutedRoutedEventArgs e)
     {
       string? imageFolder = null; // "D:\\Zusi\\ObjectImages";
-      string onnxModel = "D:\\Zusi\\Onnx\\vision_model.onnx";
-      string indexFile = "D:\\Zusi\\index\\index.bin";
+      string onnxModel = DataManager.Instance.modelPath;
+      string indexFile = DataManager.Instance.indexPath;
 
       var progress = new Progress<string>(msg => DataManager.Instance.SetStatusMessage(msg));
       _exportCts = new CancellationTokenSource();
@@ -477,7 +478,7 @@ namespace ZusiObjektAlbum
             fullpath = l.GetDocument().Filename;
           }
           DataPathType dtp = DataPathType.Unknown;
-          string filename = Zusi.GetRelativePathOf(fullpath, ref dtp);
+          string filename = fullpath; // Zusi.GetRelativePathOf(fullpath, ref dtp);
           if (DataManager.Instance.ExportFile.IsActive)
           {
             DataManager.Instance.ExportFile.WriteLine(filename);
@@ -496,7 +497,7 @@ namespace ZusiObjektAlbum
             fullpath = resultItem.SourcePath;
 
             DataPathType dtp = DataPathType.Unknown;
-            string filename = Zusi.GetRelativePathOf(fullpath, ref dtp);
+            string filename = fullpath; // Zusi.GetRelativePathOf(fullpath, ref dtp);
             Clipboard.SetText(filename);
           }
 
@@ -531,11 +532,11 @@ namespace ZusiObjektAlbum
     // URLs auf euer Repo anpassen. Für Dateien >100 MB (z.B. das ONNX-Modell)
     // unbedingt eine GitHub-Release-Asset-URL verwenden, nicht raw.githubusercontent.com.
     private const string OnnxModelUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/vision_model.onnx";
+    private const string OnnxRemBgModelUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/u2net.onnx";
     private const string IndexUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/index.bin";
 
     private async void OnDownloadIndex(object sender, RoutedEventArgs e)
     {
-      string onnxModel = DataManager.Instance.modelPath;
       string indexFile = DataManager.Instance.indexPath;
 
       var progressWindow = new DownloadProgressWindow { Owner = this };
@@ -567,8 +568,7 @@ namespace ZusiObjektAlbum
     private async void OnDownloadModel(object sender, RoutedEventArgs e)
     {
       string onnxModel = DataManager.Instance.modelPath;
-      string indexFile = DataManager.Instance.indexPath;
-
+      
       var progressWindow = new DownloadProgressWindow { Owner = this };
       progressWindow.Show();
 
@@ -582,6 +582,36 @@ namespace ZusiObjektAlbum
 
         progressWindow.Close();
         MessageBox.Show(this, "Modell wurde erfolgreich heruntergeladen.", "Fertig",
+            MessageBoxButton.OK, MessageBoxImage.Information);
+      }
+      catch (OperationCanceledException)
+      {
+        progressWindow.Close();
+      }
+      catch (Exception ex)
+      {
+        progressWindow.Close();
+        MessageBox.Show(this, ex.Message, "Fehler beim Download", MessageBoxButton.OK, MessageBoxImage.Error);
+      }
+    }
+
+    private async void OnDownloadRemBgModel(object sender, RoutedEventArgs e)
+    {
+      string rembgonnxModel = DataManager.Instance.rembgModelPath;
+
+      var progressWindow = new DownloadProgressWindow { Owner = this };
+      progressWindow.Show();
+
+      try
+      {
+        var onnxProgress = new Progress<int>(p => progressWindow.ReportProgress($"Lade RemBG-ONNX-Modell... {p}%", p));
+        await ModelDownloader.ModelDownloader.DownloadFileAsync(OnnxRemBgModelUrl, rembgonnxModel, onnxProgress, progressWindow.CancellationToken);
+
+        //var indexProgress = new Progress<int>(p => progressWindow.ReportProgress($"Lade index.bin... {p}%", p));
+        //await ModelDownloader.ModelDownloader.DownloadFileAsync(IndexUrl, indexFile, indexProgress, progressWindow.CancellationToken);
+
+        progressWindow.Close();
+        MessageBox.Show(this, "RemBg-Modell wurde erfolgreich heruntergeladen.", "Fertig",
             MessageBoxButton.OK, MessageBoxImage.Information);
       }
       catch (OperationCanceledException)

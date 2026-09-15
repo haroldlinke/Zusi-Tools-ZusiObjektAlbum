@@ -95,4 +95,12 @@ using System.Windows;
 // Automatisches Einlesen nur noch vom DatenOffiziell
 // Landschaften werden zunächst als Dateipfad gespeichert und erst beim Öffnen geparst
 
-[assembly: AssemblyVersion("8.0.01")]
+// 8.0.1 - 14.9.2026
+// Umstellung auf .net8
+// Ähnlichkeitssuche hinzugefügt
+
+// 8.0.2 - 15.9.2026
+// Hintergrundentfernen für Ähnlichkeitssuche
+
+
+[assembly: AssemblyVersion("8.0.2")]

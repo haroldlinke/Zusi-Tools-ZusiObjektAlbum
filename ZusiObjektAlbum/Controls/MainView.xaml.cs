@@ -11,6 +11,8 @@ using System.Windows.Media.Imaging;
 using ZusiKlassenLib.Landscape;
 using ZusiObjektAlbum.Core;
 using ZusiObjektAlbum.MVVM;
+using ZusiSimilaritySearch;
+using ZusiKlassenLib;
 
 namespace ZusiObjektAlbum.Controls;
 
@@ -28,6 +30,8 @@ public partial class MainView : UserControl
   private EmbeddingIndex? _index;
 
   private string? _currentPhotoPath;
+
+  private BackgroundRemover? _backgroundRemover;
 
   public MainView()
   {
@@ -77,6 +81,7 @@ public partial class MainView : UserControl
 
   private void DropArea_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
   {
+    DropArea.Focus(); // damit Ctrl+V danach greift, ohne extra hinklicken zu müssen
     var dialog = new OpenFileDialog
     {
       Title = "Foto des realen Objekts auswählen",
@@ -90,17 +95,17 @@ public partial class MainView : UserControl
     }
   }
 
-  private void SetPhoto(string path)
-  {
-    _currentPhotoPath = path;
+  //private void SetPhoto(string path)
+  //{
+  //  _currentPhotoPath = path;
 
-    PhotoPreviewImage.Source = LoadBitmap(path);
-    PhotoPreviewImage.Visibility = Visibility.Visible;
-    DropHintText.Visibility = Visibility.Collapsed;
+  //  PhotoPreviewImage.Source = LoadBitmap(path);
+  //  PhotoPreviewImage.Visibility = Visibility.Visible;
+  //  DropHintText.Visibility = Visibility.Collapsed;
 
-    SearchButton.IsEnabled = true;
-    StatusText.Text = $"Foto geladen: {Path.GetFileName(path)}";
-  }
+  //  SearchButton.IsEnabled = true;
+  //  StatusText.Text = $"Foto geladen: {Path.GetFileName(path)}";
+  //}
 
   private static BitmapImage LoadBitmap(string path)
   {
@@ -118,6 +123,128 @@ public partial class MainView : UserControl
   // ----------------------------------------------------------------
 
   private DateTime _indexLoadedAt = DateTime.MinValue;
+
+
+  //private void SetPhoto(string path)
+  //{
+  //  _currentPhotoPath = path;
+  //  _originalPhotoBitmap = LoadBitmap(path);
+
+  //  DropHintText.Visibility = Visibility.Collapsed;
+  //  PhotoPreviewImage.Visibility = Visibility.Visible;
+  //  SearchButton.IsEnabled = true;
+
+  //  _ = UpdatePhotoPreviewAsync();
+  //}
+
+  private BitmapSource? _originalPhotoBitmap;
+
+  private void SetPhoto(string path)
+  {
+    _currentPhotoPath = path;
+    BitmapSource bitmap = LoadBitmap(path);
+    SetPhotoFromBitmap(bitmap, Path.GetFileName(path));
+  }
+
+  private void SetPhotoFromClipboard(BitmapSource bitmap)
+  {
+    _currentPhotoPath = null; // kein Dateipfad vorhanden - ist ok, wird nirgends mehr vorausgesetzt
+    SetPhotoFromBitmap(bitmap, "eingefügtes Bild (Zwischenablage)");
+  }
+
+  private void SetPhotoFromBitmap(BitmapSource bitmap, string sourceLabel)
+  {
+    _originalPhotoBitmap = bitmap;
+
+    DropHintText.Visibility = Visibility.Collapsed;
+    PhotoPreviewImage.Visibility = Visibility.Visible;
+    SearchButton.IsEnabled = true;
+    StatusText.Text = $"Foto geladen: {sourceLabel}";
+
+    _ = UpdatePhotoPreviewAsync(); // berücksichtigt automatisch den aktuellen Stand der "Hintergrund entfernen"-Checkbox
+  }
+
+  private async void RemoveBackgroundCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+  {
+    await UpdatePhotoPreviewAsync();
+  }
+
+  private async Task UpdatePhotoPreviewAsync()
+  {
+    if (_originalPhotoBitmap is null)
+    {
+      return;
+    }
+    string u2netPath = DataManager.Instance.rembgModelPath;
+    if (!File.Exists(u2netPath))
+    {
+      MessageBox.Show(
+          Window.GetWindow(this),
+          $"Es wurde noch kein REMbg-Modell gefunden unter:\n{u2netPath}\n\n" +
+          "Bitte zuerst über \"Tools \u2192 Hintergrunderkennung-Modell von GitHub herunterladen...\" das Modell herunterladen.",
+          "Kein Hintergrunderkennung-Modell vorhanden",
+          MessageBoxButton.OK,
+          MessageBoxImage.Warning);
+      return;
+    }
+
+    if (RemoveBackgroundCheckBox.IsChecked != true)
+    {
+      PhotoPreviewImage.Source = _originalPhotoBitmap;
+      StatusText.Text = "Foto geladen.";
+      return;
+    }
+
+    try
+    {
+      StatusText.Text = "Entferne Hintergrund für Vorschau...";
+
+      if (_backgroundRemover is null)
+      {
+        
+        _backgroundRemover = await Task.Run(() => new BackgroundRemover(u2netPath));
+      }
+      
+      BitmapSource cleaned = await Task.Run(() => _backgroundRemover.RemoveBackground(_originalPhotoBitmap));
+      PhotoPreviewImage.Source = cleaned;
+      StatusText.Text = "Vorschau ohne Hintergrund - so wird auch gesucht.";
+    }
+    catch (Exception ex)
+    {
+      // Vorschau ist nur ein Komfortfeature - bei Fehlern lieber das
+      // Originalfoto weiter zeigen, als die ganze Suche zu blockieren.
+      PhotoPreviewImage.Source = _originalPhotoBitmap;
+      StatusText.Text = $"Hintergrundentfernung fehlgeschlagen, zeige Original: {ex.Message}";
+    }
+  }
+
+  private void DropArea_PreviewKeyDown(object sender, KeyEventArgs e)
+  {
+    if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
+    {
+      PasteFromClipboard();
+      e.Handled = true;
+    }
+  }
+
+  private void PasteFromClipboard()
+  {
+    if (!Clipboard.ContainsImage())
+    {
+      StatusText.Text = "Zwischenablage enthält kein Bild.";
+      return;
+    }
+
+    try
+    {
+      BitmapSource clipboardImage = Clipboard.GetImage();
+      SetPhotoFromClipboard(clipboardImage);
+    }
+    catch (Exception ex)
+    {
+      StatusText.Text = $"Einfügen aus Zwischenablage fehlgeschlagen: {ex.Message}";
+    }
+  }
 
   private async void SearchButton_Click(object sender, RoutedEventArgs e)
   {
@@ -169,13 +296,59 @@ public partial class MainView : UserControl
       }
 
       StatusText.Text = "Berechne Embedding für das Foto...";
-      float[] queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(_currentPhotoPath));
+      //float[] queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(_currentPhotoPath));
 
-      StatusText.Text = "Suche ähnliche Objekte...";
+      var previewBitmap = (BitmapSource)PhotoPreviewImage.Source;
+      float[] queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(previewBitmap));
+
+
+//      float[] queryEmbedding;
+
+//if (RemoveBackgroundCheckBox.IsChecked == true)
+//{
+//    if (_backgroundRemover is null)
+//    {
+//        StatusText.Text = "Lade Hintergrund-Entfernungs-Modell...";
+//        string u2netPath = DataManager.Instance.u2netModelPath; // Pfad analog zu modelPath/indexPath anlegen
+//  _backgroundRemover = await Task.Run(() => new BackgroundRemover(u2netPath));
+//    }
+
+//StatusText.Text = "Entferne Hintergrund...";
+//    BitmapSource photoBitmap = LoadBitmap(_currentPhotoPath); // vorhandene Hilfsmethode aus dem Foto-Preview
+//BitmapSource cleaned = await Task.Run(() => _backgroundRemover.RemoveBackground(photoBitmap));
+
+//StatusText.Text = "Berechne Embedding für das Foto...";
+//    queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(cleaned)); // BitmapSource-Overload, kennt ClipEmbedder schon
+//}
+//else
+//{
+//  StatusText.Text = "Berechne Embedding für das Foto...";
+//  queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(_currentPhotoPath));
+//}
+
+
+
+StatusText.Text = "Suche ähnliche Objekte...";
       var matches = await Task.Run(() => _index.Search(queryEmbedding, topN: 100));
 
       foreach (var match in matches)
       {
+        
+
+        // replace zusi path saved in index.bin with local zusi path
+
+
+        string local_sourcePath = "";
+        if (match.SourcePath.StartsWith(DataManager.Instance.objectsFolder))
+        {
+          local_sourcePath = match.SourcePath.Substring(DataManager.Instance.objectsFolder.Length);
+          DataPathType dtp = DataPathType.Official;
+          local_sourcePath = Zusi.GetAbsolutePathOf(local_sourcePath,ref dtp); // normalize path
+        }
+        else
+        {
+          local_sourcePath = match.SourcePath;
+        }
         string? thumbnail = FindThumbnail(objectsFolder, match.ObjectId, match.BestView);
 
         _results.Add(new ResultItem
@@ -183,7 +356,7 @@ public partial class MainView : UserControl
           ObjectId = match.ObjectId,
           Score = match.Score,
           BestView = match.BestView,
-          SourcePath = match.SourcePath,
+          SourcePath = local_sourcePath,
           ThumbnailPath = thumbnail
         });
       }

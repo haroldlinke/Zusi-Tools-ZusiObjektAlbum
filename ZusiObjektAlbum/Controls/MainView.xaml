@@ -64,6 +64,8 @@
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="#555" BorderThickness="2"
                     CornerRadius="6"
+                    Focusable="True"
+                    PreviewKeyDown="DropArea_PreviewKeyDown"
                     AllowDrop="True"
                     Drop="DropArea_Drop"
                     DragOver="DropArea_DragOver"
@@ -83,6 +85,9 @@
                            Visibility="Collapsed" />
         </Grid>
       </Border>
+      <CheckBox x:Name="RemoveBackgroundCheckBox" Content="Hintergrund entfernen" Margin="0,6,0,0"
+          Checked="RemoveBackgroundCheckBox_CheckedChanged"
+          Unchecked="RemoveBackgroundCheckBox_CheckedChanged"/>
 
       <Button x:Name="SearchButton"
                     Content="Ähnliche Objekte suchen"

@@ -246,9 +246,10 @@ namespace ZusiObjektAlbum.MVVM
     public event EventHandler DataLoadCompleted;
     public event EventHandler FinishedImportFolder;
 
-    public string modelPath = "D:/Zusi/Onnx/vision_model.onnx";
-    public string indexPath = "D:/Zusi/index/index.bin";
-    public string objectsFolder = "D:/Zusi/ObjectImages";
+    public string modelPath = "";
+    public string indexPath = "";
+    public string objectsFolder = "C:\\Program Files\\Zusi3\\_ZusiData";
+    public string rembgModelPath = ""; //"C:\\Users\\Public\\Documents\\Zusi3\\_Tools\\ZusiObjektAlbum\\u2net.onnx";
 
     //---------------------------------------------------------------------
     public DataManager()

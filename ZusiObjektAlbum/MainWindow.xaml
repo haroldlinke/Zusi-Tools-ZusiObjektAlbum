@@ -58,7 +58,8 @@
       </Control.Background>
       <MenuItem Header="_Tools">
         <MenuItem x:Name="MenuItemOptions" Command="{x:Static local:MainWindow.CommandIndexObjects}" />
-        <MenuItem Header="Modell von GitHub herunterladen..." Click="OnDownloadModel"/>
+        <MenuItem Header="Vision-Modell von GitHub herunterladen..." Click="OnDownloadModel"/>
+        <MenuItem Header="Hintergrunderkennung-Modell von GitHub herunterladen..." Click="OnDownloadRemBgModel"/>
         <MenuItem Header="Index von GitHub herunterladen..." Click="OnDownloadIndex"/>
       </MenuItem>
     </Menu>

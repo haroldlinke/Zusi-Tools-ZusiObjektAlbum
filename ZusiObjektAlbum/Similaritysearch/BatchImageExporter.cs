@@ -59,7 +59,7 @@ namespace ZusiObjektAlbum.Similaritysearch
         // Nach wie vielen Objekten die index.bin zwischengespeichert wird -
         // bei einem Abbruch mitten im 12.000er-Lauf geht so nur der Fortschritt
         // seit dem letzten Speichern verloren, nicht der ganze Lauf.
-        private const int IndexSaveInterval = 200;
+        private const int IndexSaveInterval = 10;
 
     private static readonly string[] ViewNames = { "left", "right", "back", "front" };
 
@@ -155,11 +155,11 @@ namespace ZusiObjektAlbum.Similaritysearch
                 }
 
                 int done = i + 1;
-                if (done % IndexSaveInterval == 0 || done == leaves.Count)
+                if (done % IndexSaveInterval == 0 || done == leaves.Count || done == 1)
                 {
                     index.SaveToFile(indexPath);
                     progress?.Report(
-                        $"{done}/{leaves.Count}  (embedded: {embedded}, übersprungen: {fullySkipped}, " +
+                        $"{done}/{leaves.Count}  (Index wird erzeugt - embedded: {embedded}, übersprungen: {fullySkipped}, " +
                         $"fehler: {failedLog.Count})  |  index.bin gespeichert ({index.ObjectCount} Objekte)");
                 }
 
