@@ -44,6 +44,7 @@
 
     <ContextMenu x:Key="CopyObjektPathContextMenu">
       <MenuItem Command="{x:Static m:ZOACommands.CopyPathToClipboardCommand}"/>
+      <MenuItem Command="{x:Static m:ZOACommands.CopyFilenamePathToClipboardCommand}"/>
     </ContextMenu>
   </Window.Resources>
 

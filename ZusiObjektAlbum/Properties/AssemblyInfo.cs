@@ -102,5 +102,8 @@ using System.Windows;
 // 8.0.2 - 15.9.2026
 // Hintergrundentfernen für Ähnlichkeitssuche
 
+// 8.0.3 - 16.9.2026
+// Einfügen Bild mit ctrl+V überarbeitet, sodass auch Bilder aus der Zwischenablage eingefügt werden können, die mit ctrl-c aus dem Explorer kopiert wurden
 
-[assembly: AssemblyVersion("8.0.2")]
+
+[assembly: AssemblyVersion("8.0.3")]

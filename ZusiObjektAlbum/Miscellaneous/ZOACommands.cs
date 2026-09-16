@@ -30,10 +30,13 @@ namespace ZusiObjektAlbum.Miscellaneous
         public static readonly RoutedUICommand RenameSectionCommand = new RoutedUICommand("_Umbenennen", "RenameSectionCommand", typeof(ZOACommands),
             new InputGestureCollection(new InputGesture[] { new KeyGesture(Key.F2) }));
 
-        public static readonly RoutedUICommand CopyPathToClipboardCommand = new RoutedUICommand("_Dateipfad kopieren", "CopyPathToClipboardCommand", typeof(ZOACommands),
-            new InputGestureCollection(new InputGesture[] { new KeyGesture(Key.C, ModifierKeys.Control) }));
+        public static readonly RoutedUICommand CopyPathToClipboardCommand = new RoutedUICommand("_Dateiordnerpfad kopieren", "CopyPathToClipboardCommand", typeof(ZOACommands),
+            new InputGestureCollection(new InputGesture[] { new KeyGesture(Key.C, ModifierKeys.Alt) }));
 
-        public static readonly RoutedUICommand RemoveItemCommand = new RoutedUICommand("Dateipfad _entfernen", "RemoveItemCommand", typeof(ZOACommands));
+    public static readonly RoutedUICommand CopyFilenamePathToClipboardCommand = new RoutedUICommand("_Dateinamepfad kopieren", "CopyFilenamePathToClipboardCommand", typeof(ZOACommands),
+           new InputGestureCollection(new InputGesture[] { new KeyGesture(Key.C, ModifierKeys.Control) }));
+
+    public static readonly RoutedUICommand RemoveItemCommand = new RoutedUICommand("Dateipfad _entfernen", "RemoveItemCommand", typeof(ZOACommands));
 
         public static readonly RoutedUICommand ClearExportFileCommand = new RoutedUICommand("Exportdatei _leeren", "ClearExportFileCommand", typeof(ZOACommands));
     }

@@ -61,6 +61,7 @@ namespace ZusiObjektAlbum
       CommandBindings.Add(new CommandBinding(ZOACommands.ManageFoldersCommand, OnManageFolders));
       CommandBindings.Add(new CommandBinding(ZOACommands.RemoveObjectCommand, OnRemoveObject));
       CommandBindings.Add(new CommandBinding(ZOACommands.CopyPathToClipboardCommand, OnCopyPathToClipboard, OnCanCopyPathToClipboard));
+      CommandBindings.Add(new CommandBinding(ZOACommands.CopyFilenamePathToClipboardCommand, OnCopyFilenamePathToClipboard, OnCanCopyFilenamePathToClipboard));
       CommandBindings.Add(new CommandBinding(ZOACommands.ClearExportFileCommand, DataManager.Instance.OnClearExportFile, DataManager.Instance.OnCanClearExportFile));
       CommandBindings.Add(new CommandBinding(CommandIndexObjects, OnIndexObjects, OnCanIndexObjects));
       DataManager.Instance.DataLoadCompleted += (s, e) => _dataLoadComplete = true;
@@ -478,14 +479,14 @@ namespace ZusiObjektAlbum
             fullpath = l.GetDocument().Filename;
           }
           DataPathType dtp = DataPathType.Unknown;
-          string filename = fullpath; // Zusi.GetRelativePathOf(fullpath, ref dtp);
+          string filename = System.IO.Path.GetDirectoryName(fullpath); // Zusi.GetRelativePathOf(fullpath, ref dtp);
           if (DataManager.Instance.ExportFile.IsActive)
           {
             DataManager.Instance.ExportFile.WriteLine(filename);
           }
           else
           {
-            Clipboard.SetText(filename);
+            System.Windows.Forms.Clipboard.SetText(filename);
           }
         }
         else
@@ -498,7 +499,7 @@ namespace ZusiObjektAlbum
 
             DataPathType dtp = DataPathType.Unknown;
             string filename = fullpath; // Zusi.GetRelativePathOf(fullpath, ref dtp);
-            Clipboard.SetText(filename);
+            System.Windows.Forms.Clipboard.SetText(filename);
           }
 
         }
@@ -510,6 +511,82 @@ namespace ZusiObjektAlbum
       }
     }
 
+    //---------------------------------------------------------------------
+    private void OnCanCopyFilenamePathToClipboard(object sender, CanExecuteRoutedEventArgs e)
+    {
+      DataManager dm = DataManager.Instance;
+      if (dm.ExportFile.IsActive)
+      {
+        Zusi3DModel z = dm.SelectedObject;
+        e.CanExecute = z != null && z.ObjectModel.Object != null;
+      }
+      else
+      {
+        e.CanExecute = true;
+      }
+    }
+
+    //---------------------------------------------------------------------
+    private void OnCopyFilenamePathToClipboard(object sender, ExecutedRoutedEventArgs e)
+    {
+      try
+      {
+        ILandscapeObject ll = null;
+        if (e.Parameter == null)
+        {
+          if (tvObjects.SelectedItem is ObjectModel om && om.Object is ILandscapeObject lo)
+          {
+            ll = lo;
+          }
+        }
+        else if (e.Parameter is ObjectModel om && om.Object is ILandscapeObject lo)
+        {
+          ll = lo;
+        }
+        string fullpath = null;
+        if (ll != null)
+        {
+
+          if (ll is LandscapeObject lo)
+          {
+            fullpath = lo.Filename;
+          }
+          else if (ll is Landschaft l)
+          {
+            fullpath = l.GetDocument().Filename;
+          }
+          DataPathType dtp = DataPathType.Unknown;
+          string filename = fullpath; // Zusi.GetRelativePathOf(fullpath, ref dtp);
+          if (DataManager.Instance.ExportFile.IsActive)
+          {
+            DataManager.Instance.ExportFile.WriteLine(filename);
+          }
+          else
+          {
+            System.Windows.Forms.Clipboard.SetText(filename);
+          }
+        }
+        else
+        {
+          // similarity search resultitem
+
+          if (e.OriginalSource is ListBoxItem lm && lm.DataContext is ResultItem resultItem)
+          {
+            fullpath = resultItem.SourcePath;
+
+            DataPathType dtp = DataPathType.Unknown;
+            string filename = fullpath; // Zusi.GetRelativePathOf(fullpath, ref dtp);
+            System.Windows.Forms.Clipboard.SetText(filename);
+          }
+
+        }
+      }
+      catch (Exception ex)
+      {
+        Log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
+        MessageBox.Show(this, ex.Message, "Fehler beim Kopieren des Pfads", MessageBoxButton.OK, MessageBoxImage.Error);
+      }
+    }
     //---------------------------------------------------------------------
     private void OnManageFolders(object sender, ExecutedRoutedEventArgs e)
     {

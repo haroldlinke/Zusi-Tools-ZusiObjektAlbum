@@ -13,6 +13,7 @@ using ZusiObjektAlbum.Core;
 using ZusiObjektAlbum.MVVM;
 using ZusiSimilaritySearch;
 using ZusiKlassenLib;
+using System.Collections.Specialized;
 
 namespace ZusiObjektAlbum.Controls;
 
@@ -23,6 +24,7 @@ public partial class MainView : UserControl
 
   private readonly ObservableCollection<ResultItem> _results = new();
 
+
   // Werden beim ersten Suchlauf einmalig geladen und danach wiederverwendet -
   // Modell-Laden und Index-Laden sind die teuren Schritte, die man nicht pro
   // Anfrage wiederholen möchte.
@@ -32,6 +34,8 @@ public partial class MainView : UserControl
   private string? _currentPhotoPath;
 
   private BackgroundRemover? _backgroundRemover;
+
+  private Window? _parentWindow;
 
   public MainView()
   {
@@ -154,6 +158,20 @@ public partial class MainView : UserControl
 
   private void SetPhotoFromBitmap(BitmapSource bitmap, string sourceLabel)
   {
+    // Absicherung an zentraler Stelle: JEDES hereinkommende Bild einfrieren,
+    // egal aus welcher Quelle. Ohne Freeze() ist das Bild an den Thread
+    // gebunden, der es erzeugt hat - greift z.B. der Embedding-Task
+    // (Task.Run) später darauf zu, kommt genau die gemeldete
+    // InvalidOperationException ("Der aufrufende Thread kann nicht
+    // zugreifen..."). Dateien waren schon ok, weil LoadBitmap() das schon
+    // macht - Clipboard.GetImage() liefert dagegen ein nicht eingefrorenes
+    // Bild.
+    if (bitmap.CanFreeze && !bitmap.IsFrozen)
+    {
+      bitmap.Freeze();
+    }
+
+
     _originalPhotoBitmap = bitmap;
 
     DropHintText.Visibility = Visibility.Collapsed;
@@ -191,7 +209,7 @@ public partial class MainView : UserControl
     if (RemoveBackgroundCheckBox.IsChecked != true)
     {
       PhotoPreviewImage.Source = _originalPhotoBitmap;
-      StatusText.Text = "Foto geladen.";
+      //StatusText.Text = "Foto geladen.";
       return;
     }
 
@@ -218,37 +236,122 @@ public partial class MainView : UserControl
     }
   }
 
-  private void DropArea_PreviewKeyDown(object sender, KeyEventArgs e)
+  private void PasteCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
   {
-    if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
+    e.CanExecute = true;
+  }
+
+  private void PasteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+  {
+    PasteFromClipboard();
+  }
+
+  // Sorgt dafür, dass Ctrl+V auch direkt nach dem Öffnen funktioniert, BEVOR
+  // irgendwo hingeklickt wurde - Befehlssuche braucht ein fokussiertes
+  // Element als Startpunkt, ohne das würde Ctrl+V ins Leere laufen.
+  private void SimilaritySearchControl_Loaded(object sender, RoutedEventArgs e)
+  {
+    DropArea.Focus();
+    _parentWindow = Window.GetWindow(this);
+    if (_parentWindow != null)
     {
-      PasteFromClipboard();
-      e.Handled = true;
+      _parentWindow.Activated += ParentWindow_Activated;
     }
   }
 
+  private void ParentWindow_Activated(object? sender, EventArgs e)
+  {
+    // Nach Reaktivierung (z.B. nach Screenshot in anderer App, dann Klick
+    // auf die Titelleiste) kann der Tastatur-Fokus komplett verloren
+    // gegangen sein - Routed Commands wie Ctrl+V brauchen aber ein
+    // fokussiertes Element als Ausgangspunkt für die Befehlssuche, sonst
+    // läuft die Taste ins Leere. Zur Sicherheit Fokus zurücksetzen, falls
+    // aktuell nichts fokussiert ist.
+    if (Keyboard.FocusedElement == null)
+    {
+      DropArea.Focus();
+    }
+  }
+
+  private void SimilaritySearchControl_Unloaded(object sender, RoutedEventArgs e)
+  {
+    if (_parentWindow != null)
+    {
+      _parentWindow.Activated -= ParentWindow_Activated;
+    }
+  }
+
+  //private void DropArea_PreviewKeyDown(object sender, KeyEventArgs e)
+  //{
+  //  if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
+  //  {
+  //    PasteFromClipboard();
+  //    e.Handled = true;
+  //  }
+  //}
+
+  //private void PasteFromClipboard()
+  //{
+  //  if (!Clipboard.ContainsImage())
+  //  {
+  //    StatusText.Text = "Zwischenablage enthält kein Bild.";
+  //    return;
+  //  }
+
+  //  try
+  //  {
+  //    BitmapSource clipboardImage = Clipboard.GetImage();
+  //    SetPhotoFromClipboard(clipboardImage);
+  //  }
+  //  catch (Exception ex)
+  //  {
+  //    StatusText.Text = $"Einfügen aus Zwischenablage fehlgeschlagen: {ex.Message}";
+  //  }
+  //}
+
   private void PasteFromClipboard()
   {
-    if (!Clipboard.ContainsImage())
+    if (Clipboard.ContainsImage())
     {
-      StatusText.Text = "Zwischenablage enthält kein Bild.";
+      try
+      {
+        BitmapSource clipboardImage = Clipboard.GetImage();
+        SetPhotoFromClipboard(clipboardImage);
+      }
+      catch (Exception ex)
+      {
+        StatusText.Text = $"Einfügen aus Zwischenablage fehlgeschlagen: {ex.Message}";
+      }
       return;
     }
 
-    try
+    if (Clipboard.ContainsFileDropList())
     {
-      BitmapSource clipboardImage = Clipboard.GetImage();
-      SetPhotoFromClipboard(clipboardImage);
+      // Explorer legt beim Kopieren einer Datei (Ctrl+C) keine Bitmap in
+      // die Zwischenablage, sondern eine Dateiliste (CF_HDROP) - genau
+      // dasselbe Format wie beim Drag&Drop aus dem Explorer.
+      StringCollection files = Clipboard.GetFileDropList();
+      string? imagePath = files
+          .Cast<string>()
+          .FirstOrDefault(f => SupportedPhotoExtensions.Contains(
+              Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+
+      if (imagePath != null)
+      {
+        SetPhoto(imagePath); // vorhandener Datei-Ladeweg, inkl. Freeze() in LoadBitmap()
+        return;
+      }
+
+      StatusText.Text = "Die kopierte(n) Datei(en) sind kein unterstütztes Bildformat.";
+      return;
     }
-    catch (Exception ex)
-    {
-      StatusText.Text = $"Einfügen aus Zwischenablage fehlgeschlagen: {ex.Message}";
-    }
+
+    StatusText.Text = "Zwischenablage enthält weder ein Bild noch eine Bilddatei.";
   }
 
   private async void SearchButton_Click(object sender, RoutedEventArgs e)
   {
-    if (_currentPhotoPath is null)
+    if (_originalPhotoBitmap is null)
     {
       return;
     }

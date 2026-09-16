@@ -3,7 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ZusiObjektAlbum.Controls"
              xmlns:cv="clr-namespace:ZusiObjektAlbum.Converter"
-             Background="White">
+             Background="White"
+             Loaded="SimilaritySearchControl_Loaded"
+             Unloaded="SimilaritySearchControl_Unloaded">
+  <UserControl.CommandBindings>
+    <CommandBinding Command="ApplicationCommands.Paste"
+                         Executed="PasteCommand_Executed"
+                         CanExecute="PasteCommand_CanExecute"/>
+  </UserControl.CommandBindings>
 
   <!--Background="#1e1e1e">-->
 
@@ -65,7 +72,6 @@
                     BorderBrush="#555" BorderThickness="2"
                     CornerRadius="6"
                     Focusable="True"
-                    PreviewKeyDown="DropArea_PreviewKeyDown"
                     AllowDrop="True"
                     Drop="DropArea_Drop"
                     DragOver="DropArea_DragOver"
