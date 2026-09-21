@@ -21,6 +21,7 @@
   <Window.Resources>
     <cv:WarningLevelConverter x:Key="WarningLevelConverter"/>
     <cv:NotEmptyStringConverter x:Key="NotEmptyStringConverter"/>
+    <cv:ViewSourceConverter x:Key="ViewSourceConverter"/>
 
     <SolidColorBrush x:Key="OptionButton.Background.On" Color="OrangeRed"/>
 
@@ -127,68 +128,153 @@
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0" Margin="0,1,0,0" Background="{x:Null}" BorderThickness="0">
           <TabItem Header="Objektübersicht">
-            <c:DisplayControl Title="Objektübersicht" Margin="0 0 0 1">
-              <TreeView x:Name="tvObjects" BorderThickness="0" ItemsSource="{Binding Objects, Mode=OneWay}" Background="{x:Null}" SelectedItemChanged="ObjectView_SelectedItemChanged" t:TreeViewInPlaceEditBehavior.IsEditable="True">
-                <TreeView.ItemContainerStyle>
-                  <Style TargetType="{x:Type TreeViewItem}">
-                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                    <!-- Drag'n'Drop
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+              </Grid.RowDefinitions>
+
+              <!--<TextBox Grid.Row="0" Margin="2"
+           Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged, Delay=250}"
+           ToolTip="Schlagworte, durch Leerzeichen getrennt (UND-Verknüpfung)"/>-->
+              <Grid Grid.Row="0" Margin="2">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid>
+                  <TextBox x:Name="tbKeywordInput" Width="160" VerticalContentAlignment="Center"
+                           TextChanged="KeywordInput_TextChanged"
+                           PreviewKeyDown="KeywordInput_PreviewKeyDown"
+                           GotKeyboardFocus="KeywordInput_GotKeyboardFocus"
+                           LostKeyboardFocus="KeywordInput_LostKeyboardFocus"
+                           ToolTip="Schlagwort(e) eintippen, Pfeiltasten + Enter oder Klick zum Hinzufügen (ODER-Verknüpfung"/>
+
+                  <Popup x:Name="popKeywords" StaysOpen="True" Placement="Bottom"
+                         PlacementTarget="{Binding ElementName=tbKeywordInput}">
+                    <Border BorderThickness="1"
+                            BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+                            Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
+                      <ListBox x:Name="lbKeywords" Focusable="False" BorderThickness="0" MaxHeight="220"
+                               MinWidth="{Binding ActualWidth, ElementName=tbKeywordInput}"
+                               ItemsSource="{Binding KeywordView}">
+                        <ListBox.ItemContainerStyle>
+                          <Style TargetType="ListBoxItem">
+                            <Setter Property="Focusable" Value="False"/>
+                            <EventSetter Event="PreviewMouseLeftButtonUp" Handler="KeywordItem_Click"/>
+                            <Style.Triggers>
+                              <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"/>
+                              </Trigger>
+                              <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>-->
+                                <Setter Property="Foreground" Value="Black"/>
+                              </Trigger>
+                            </Style.Triggers>
+                          </Style>
+                        </ListBox.ItemContainerStyle>
+                      </ListBox>
+                    </Border>
+                  </Popup>
+                </Grid>
+                <ItemsControl Grid.Column="1" Margin="4,0" VerticalAlignment="Center"
+                ItemsSource="{Binding SelectedKeywords}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel/>
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Margin="0,1,4,1" Padding="6,1,2,1" CornerRadius="10" BorderThickness="1"
+                              Background="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+                              BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+                        <StackPanel Orientation="Horizontal">
+
+                          <Button Content="✕" FontSize="10" Margin="4,0,0,0" Padding="3,0"
+                                  BorderThickness="0" Background="Transparent" Cursor="Hand"
+                                  ToolTip="Entfernen" Click="RemoveChip_Click"/>
+                          <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Grid>
+
+              <c:DisplayControl Grid.Row="1"  Title="Objektübersicht" Margin="0 0 0 1">
+                <TreeView x:Name="tvObjects" BorderThickness="0" ItemsSource="{Binding Objects,Mode=OneWay}" Background="{x:Null}" SelectedItemChanged="ObjectView_SelectedItemChanged" t:TreeViewInPlaceEditBehavior.IsEditable="True">
+                  <TreeView.ItemContainerStyle>
+                    <Style TargetType="{x:Type TreeViewItem}">
+                      <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                      <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                      <!--<Setter Property="IsFilterVisible" Value="{Binding IsFilterVisible, Mode=TwoWay}" />-->
+
+                      <!-- Drag'n'Drop
                             <EventSetter Event="DragOver" Handler="ObjectView_DragOver"/>
                             <EventSetter Event="Drop" Handler="ObjectView_Drop"/>
                             <EventSetter Event="MouseMove" Handler="ObjectView_MouseMove"/>
                             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ObjectView_PreviewMouseLeftButtonDown"/>
                             -->
-                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="ObjectView_PreviewMouseRightButtonDown"/>
-                    <Style.Triggers>
-                      <DataTrigger Binding="{Binding IsBold}" Value="True">
-                        <Setter Property="FontWeight" Value="Bold"/>
-                      </DataTrigger>
-                      <DataTrigger Binding="{Binding IsBold}" Value="False">
-                        <Setter Property="FontWeight" Value="Normal"/>
-                      </DataTrigger>
-                      <DataTrigger Binding="{Binding IsErroneous}" Value="True">
-                        <Setter Property="FontStyle" Value="Italic"/>
-                        <Setter Property="Foreground" Value="Red"/>
-                      </DataTrigger>
-                    </Style.Triggers>
-                  </Style>
-                </TreeView.ItemContainerStyle>
-                <TreeView.ItemTemplate>
-                  <HierarchicalDataTemplate ItemsSource="{Binding Children, Mode=OneWay}">
-                    <Grid>
-                      <TextBlock Text="{Binding DisplayName}" Margin="2"/>
-                      <TextBox x:Name="edit" Text="{Binding DisplayName, UpdateSourceTrigger=Explicit}" Visibility="Collapsed"/>
-                    </Grid>
-                    <HierarchicalDataTemplate.Triggers>
-                      <MultiDataTrigger>
-                        <MultiDataTrigger.Conditions>
-                          <Condition Binding="{Binding IsSelected}" Value="True"/>
-                          <Condition Binding="{Binding IsReadOnly}" Value="False"/>
-                          <Condition Binding="{Binding Path=(t:TreeViewInPlaceEditBehavior.IsEditing), RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}" Value="True"/>
-                        </MultiDataTrigger.Conditions>
-                        <Setter TargetName="edit" Property="Visibility" Value="Visible"/>
-                        <Setter TargetName="edit" Property="t:TreeViewInPlaceEditBoxBehavior.IsEditing">
-                          <Setter.Value>
-                            <Binding Path="(t:TreeViewInPlaceEditBehavior.IsEditing)" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}"/>
-                          </Setter.Value>
-                        </Setter>
-                        <Setter TargetName="edit" Property="t:TreeViewInPlaceEditBoxBehavior.IsEditConfirmed">
-                          <Setter.Value>
-                            <Binding Path="(t:TreeViewInPlaceEditBehavior.IsEditConfirmed)" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}"/>
-                          </Setter.Value>
-                        </Setter>
-                        <Setter TargetName="edit" Property="t:TreeViewInPlaceEditBoxBehavior.IsEditCancelled">
-                          <Setter.Value>
-                            <Binding Path="(t:TreeViewInPlaceEditBehavior.IsEditCancelled)" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}"/>
-                          </Setter.Value>
-                        </Setter>
-                      </MultiDataTrigger>
-                    </HierarchicalDataTemplate.Triggers>
-                  </HierarchicalDataTemplate>
-                </TreeView.ItemTemplate>
-              </TreeView>
-            </c:DisplayControl>
+                      <EventSetter Event="PreviewMouseRightButtonDown" Handler="ObjectView_PreviewMouseRightButtonDown"/>
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsBold}" Value="True">
+                          <Setter Property="FontWeight" Value="Bold"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsBold}" Value="False">
+                          <Setter Property="FontWeight" Value="Normal"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsErroneous}" Value="True">
+                          <Setter Property="FontStyle" Value="Italic"/>
+                          <Setter Property="Foreground" Value="Red"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsFilterVisible}" Value="False">
+                          <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsFilterVisible}" Value="True">
+                          <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TreeView.ItemContainerStyle>
+                  <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Children, Mode=OneWay}">
+                      <Grid>
+                        <TextBlock Text="{Binding DisplayName}" Margin="2"/>
+                        <!--<TextBox x:Name="edit" Text="{Binding DisplayName, UpdateSourceTrigger=Explicit}" Visibility="Collapsed"/>-->
+                      </Grid>
+                      <!--<HierarchicalDataTemplate.Triggers>
+                        <MultiDataTrigger>
+                          <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding IsSelected}" Value="True"/>
+                            <Condition Binding="{Binding IsReadOnly}" Value="False"/>
+                            <Condition Binding="{Binding Path=(t:TreeViewInPlaceEditBehavior.IsEditing), RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}" Value="True"/>
+                          </MultiDataTrigger.Conditions>
+                          <Setter TargetName="edit" Property="Visibility" Value="Visible"/>
+                          <Setter TargetName="edit" Property="t:TreeViewInPlaceEditBoxBehavior.IsEditing">
+                            <Setter.Value>
+                              <Binding Path="(t:TreeViewInPlaceEditBehavior.IsEditing)" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}"/>
+                            </Setter.Value>
+                          </Setter>
+                          <Setter TargetName="edit" Property="t:TreeViewInPlaceEditBoxBehavior.IsEditConfirmed">
+                            <Setter.Value>
+                              <Binding Path="(t:TreeViewInPlaceEditBehavior.IsEditConfirmed)" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}"/>
+                            </Setter.Value>
+                          </Setter>
+                          <Setter TargetName="edit" Property="t:TreeViewInPlaceEditBoxBehavior.IsEditCancelled">
+                            <Setter.Value>
+                              <Binding Path="(t:TreeViewInPlaceEditBehavior.IsEditCancelled)" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}"/>
+                            </Setter.Value>
+                          </Setter>
+                        </MultiDataTrigger>
+                      </HierarchicalDataTemplate.Triggers>-->
+                    </HierarchicalDataTemplate>
+                  </TreeView.ItemTemplate>
+                </TreeView>
+              </c:DisplayControl>
+            </Grid>
           </TabItem>
           <TabItem Header="Suche">
             <c:MainView/>
@@ -330,7 +416,7 @@
       </Grid>
       <GridSplitter HorizontalAlignment="Left" Width="5" Grid.Column="2" Background="#00FFFFFF"/>
       <!-- object views -->
-      
+
       <Grid DataContext="{Binding SelectedObject, Mode=OneWay}" Grid.Column="2" Margin="5,0,0,0" 
             MouseLeftButtonDown="ResultItemBorder_MouseLeftButtonDown"
 MouseMove="ResultItemBorder_MouseMove"

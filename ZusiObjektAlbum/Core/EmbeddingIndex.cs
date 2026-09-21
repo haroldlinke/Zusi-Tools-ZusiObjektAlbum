@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -41,6 +42,13 @@ public sealed class EmbeddingIndex
   public bool ContainsObject(string objectId) => _objectIds.Contains(objectId);
 
   /// <summary>
+  /// Liefert alle gespeicherten Ansichten (ViewEmbedding) eines Objekts -
+  /// z.B. um daraus einen gemittelten "Objekt-Vektor" fürs Tagging zu bilden.
+  /// </summary>
+  public IEnumerable<ViewEmbedding> GetEntries(string objectId) =>
+      _entries.Where(e => e.ObjectId == objectId);
+
+  /// <summary>
   /// Entfernt alle Ansichten eines Objekts (z.B. vor dem Neu-Einbetten nach
   /// einem erneuten Rendering), falls vorhanden.
   /// </summary>
@@ -60,6 +68,69 @@ public sealed class EmbeddingIndex
   /// </summary>
   public IReadOnlyList<SearchHit> Search(float[] query, int topN)
   {
+    return ComputeBestPerObject(query)
+        .Select(kv => new SearchHit(kv.Key, kv.Value.Score, kv.Value.View, kv.Value.SourcePath))
+        .OrderByDescending(x => x.Score)
+        .Take(topN)
+        .ToList();
+  }
+
+  /// <summary>
+  /// Wie Search, aber für MEHRERE Query-Fotos desselben Realobjekts (z.B.
+  /// Vorder- und Seitenansicht). Für jedes Objekt wird pro Foto der beste
+  /// Score ermittelt (wie bei Search) und über alle Fotos gemittelt - ein
+  /// Objekt muss also nicht zu jedem Foto gleich gut passen, wird aber
+  /// belohnt, wenn es zu mehreren gut passt. Bewusst NICHT die Fotos vor
+  /// dem Vergleich zu einem einzigen Durchschnittsvektor verrechnet, weil
+  /// das bei Fotos aus deutlich unterschiedlichen Blickwinkeln zu einem
+  /// "verwaschenen" Vektor führen kann, der zu keiner der eigentlichen
+  /// Ansichten mehr richtig passt.
+  /// </summary>
+  public IReadOnlyList<SearchHit> SearchMulti(IReadOnlyList<float[]> queries, int topN)
+  {
+    if (queries.Count == 0)
+    {
+      return Array.Empty<SearchHit>();
+    }
+
+    if (queries.Count == 1)
+    {
+      return Search(queries[0], topN);
+    }
+
+    var combined = new Dictionary<string, (float TotalScore, int Count, float BestSingleScore, string View, string SourcePath)>();
+
+    foreach (float[] query in queries)
+    {
+      foreach (var (objectId, data) in ComputeBestPerObject(query))
+      {
+        if (combined.TryGetValue(objectId, out var current))
+        {
+          bool isNewBest = data.Score > current.BestSingleScore;
+          combined[objectId] = (
+              current.TotalScore + data.Score,
+              current.Count + 1,
+              isNewBest ? data.Score : current.BestSingleScore,
+              isNewBest ? data.View : current.View,
+              current.SourcePath);
+        }
+        else
+        {
+          combined[objectId] = (data.Score, 1, data.Score, data.View, data.SourcePath);
+        }
+      }
+    }
+
+    return combined
+        .Select(kv => new SearchHit(kv.Key, kv.Value.TotalScore / kv.Value.Count, kv.Value.View, kv.Value.SourcePath))
+        .OrderByDescending(x => x.Score)
+        .Take(topN)
+        .ToList();
+  }
+
+  //---------------------------------------------------------------------
+  private Dictionary<string, (float Score, string View, string SourcePath)> ComputeBestPerObject(float[] query)
+  {
     var bestPerObject = new Dictionary<string, (float Score, string View, string SourcePath)>();
 
     foreach (var entry in _entries)
@@ -72,11 +143,7 @@ public sealed class EmbeddingIndex
       }
     }
 
-    return bestPerObject
-        .Select(kv => new SearchHit(kv.Key, kv.Value.Score, kv.Value.View, kv.Value.SourcePath))
-        .OrderByDescending(x => x.Score)
-        .Take(topN)
-        .ToList();
+    return bestPerObject;
   }
 
   private static float CosineSimilarity(float[] a, float[] b)
@@ -108,11 +175,6 @@ public sealed class EmbeddingIndex
     // periodischen Zwischenspeicherns über 12.000 Objekte) nicht die
     // vorhandene, funktionierende index.bin beschädigt zurückbleibt.
     string tempPath = path + ".tmp";
-    string dir = System.IO.Path.GetDirectoryName(path);
-    if (!string.IsNullOrEmpty(dir))
-    {
-      System.IO.Directory.CreateDirectory(dir);
-    }
 
     using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
     using (var bw = new BinaryWriter(fs))

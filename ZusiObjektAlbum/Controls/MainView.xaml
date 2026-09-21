@@ -89,8 +89,33 @@
                            Stretch="Uniform"
                            Margin="8"
                            Visibility="Collapsed" />
+          
         </Grid>
       </Border>
+      <ListBox x:Name="PhotosList" ItemsSource="{Binding}" Margin="0,8,0,0"
+          SelectionChanged="PhotosList_SelectionChanged"
+ScrollViewer.HorizontalScrollBarVisibility="Auto"
+ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal"/>
+          </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Grid Margin="4" Width="80">
+              <Border Height="80" Background="{x:Static SystemColors.WindowBrush}"
+               BorderBrush="{x:Static SystemColors.ControlDarkBrush}" BorderThickness="1">
+                <Image Source="{Binding Preview}" Stretch="Uniform"/>
+              </Border>
+              <Button Content="✕" Width="18" Height="18" Padding="0"
+               HorizontalAlignment="Right" VerticalAlignment="Top"
+               Click="RemovePhotoButton_Click" Tag="{Binding}"/>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <Button Content="Perspektive korrigieren..." Click="CorrectPerspectiveButton_Click" Margin="0,6,0,0" Padding="8,4"/>
       <CheckBox x:Name="RemoveBackgroundCheckBox" Content="Hintergrund entfernen" Margin="0,6,0,0"
           Checked="RemoveBackgroundCheckBox_CheckedChanged"
           Unchecked="RemoveBackgroundCheckBox_CheckedChanged"/>
@@ -160,8 +185,12 @@
                 </Border>
 
                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding ObjectId, StringFormat='Objekt {0}'}"
-                                               FontWeight="Bold" FontSize="15" />
+                  <!--<TextBlock Text="{Binding ObjectId, StringFormat='Objekt {0}'}"
+                                               FontWeight="Bold" FontSize="13" 
+                                               ToolTip="{Binding ObjectId, StringFormat='Objekt {0}'}"/>-->
+                  <TextBlock Text="{Binding ObjectId}"
+                              FontWeight="Bold" FontSize="13" 
+                              ToolTip="{Binding ObjectId, StringFormat='Objekt {0}'}"/>
                   <TextBlock Text="{Binding ScoreDisplay}"
                                                FontSize="12" Foreground="Black" Margin="0,4,0,0" />
                   <TextBlock Text="{Binding ViewDisplay}"

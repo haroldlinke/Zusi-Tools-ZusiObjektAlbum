@@ -3,6 +3,7 @@ using SovomaLib;
 using SovomaLib.Utilities;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -27,6 +28,7 @@ using ZusiObjektAlbum.Miscellaneous;
 using ZusiObjektAlbum.ModelDownloader;
 using ZusiObjektAlbum.MVVM;
 using ZusiObjektAlbum.ValidationRules;
+using static System.Net.Mime.MediaTypeNames;
 using static System.Net.WebRequestMethods;
 
 namespace ZusiObjektAlbum
@@ -150,7 +152,7 @@ namespace ZusiObjektAlbum
       }
 
       DataManager.Instance.modelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "vision_model.onnx");
-      DataManager.Instance.rembgModelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "u2net.onnx");
+      DataManager.Instance.u2netModelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "u2net.onnx");
       DataManager.Instance.indexPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "index.bin");
 
       if (!_dataLoadComplete)
@@ -257,50 +259,6 @@ namespace ZusiObjektAlbum
       panoramaView.EndAnimation();
       DataManager.Instance.SelectedObjectModel = e.NewValue as ObjectModel;
     }
-
-#if false
-        private Point _startPoint;
-
-        //---------------------------------------------------------------------
-        private void ObjectView_DragOver(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent("objectmodel"))
-            {
-
-            }
-        }
-
-        //---------------------------------------------------------------------
-        private void ObjectView_Drop(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent("objectmodel"))
-            {
-
-            }
-        }
-
-        //---------------------------------------------------------------------
-        private void ObjectView_MouseMove(object sender, MouseEventArgs e)
-        {
-            Point mousePos = e.GetPosition(tvObjects);
-            Vector diff = _startPoint - mousePos;
-
-            if (e.LeftButton == MouseButtonState.Pressed &&
-                (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
-                Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance))
-            {
-                //GetNearestContainer
-            }
-        }
-
-        //---------------------------------------------------------------------
-        private void ObjectView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            _startPoint = e.GetPosition(tvObjects);
-        }
-#endif
-
-    #region command handler
 
     //---------------------------------------------------------------------
     public void OnCanImportFolder(object sender, CanExecuteRoutedEventArgs e)
@@ -674,7 +632,7 @@ namespace ZusiObjektAlbum
 
     private async void OnDownloadRemBgModel(object sender, RoutedEventArgs e)
     {
-      string rembgonnxModel = DataManager.Instance.rembgModelPath;
+      string rembgonnxModel = DataManager.Instance.u2netModelPath;
 
       var progressWindow = new DownloadProgressWindow { Owner = this };
       progressWindow.Show();
@@ -774,7 +732,131 @@ namespace ZusiObjektAlbum
       }
     }
 
-    #endregion
+    //private void Keywords_PreviewKeyUp(object sender, KeyEventArgs e)
+    //{
+    //  if (e.Key is Key.Up or Key.Down or Key.Left or Key.Right
+    //            or Key.Enter or Key.Escape or Key.Tab)
+    //    return;
+
+    //  cbKeywords.IsDropDownOpen = true;
+    //}
+
+    //private void ClearKeyword_Click(object sender, RoutedEventArgs e)
+    //{
+    //  cbKeywords.Text = string.Empty;
+    //  cbKeywords.Focus();
+    //}
+
+    private DataManager Vm => (DataManager)DataContext;   // Typ anpassen
+
+    private bool _suppressInput;
+
+    private void KeywordInput_TextChanged(object sender, TextChangedEventArgs e)
+    {
+      if (_suppressInput) return;
+
+      Vm.KeywordInput = tbKeywordInput.Text;                 // filtert die Vorschlagsliste
+      lbKeywords.SelectedIndex = Vm.KeywordView.IsEmpty ? -1 : 0;
+      popKeywords.IsOpen = tbKeywordInput.IsKeyboardFocused && !Vm.KeywordView.IsEmpty;
+    }
+
+    private void KeywordInput_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+      if (Vm.KeywordView.IsEmpty) return;
+      if (lbKeywords.SelectedIndex < 0) lbKeywords.SelectedIndex = 0;
+      popKeywords.IsOpen = true;
+    }
+
+    private void KeywordInput_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        => popKeywords.IsOpen = false;
+
+
+    private void KeywordInput_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+      switch (e.Key)
+      {
+        case Key.Down:
+          if (!popKeywords.IsOpen)
+          {
+            if (!Vm.KeywordView.IsEmpty)
+            {
+              popKeywords.IsOpen = true;
+              if (lbKeywords.SelectedIndex < 0) lbKeywords.SelectedIndex = 0;
+            }
+          }
+          else MoveSelection(+1);
+          e.Handled = true;
+          break;
+
+        case Key.Up:
+          if (popKeywords.IsOpen) { MoveSelection(-1); e.Handled = true; }
+          break;
+
+        case Key.Enter:
+          {
+            var kw = (popKeywords.IsOpen ? lbKeywords.SelectedItem : null) as string
+                     ?? (string.IsNullOrWhiteSpace(tbKeywordInput.Text)
+                         ? null
+                         : Vm.KeywordView.Cast<string>().FirstOrDefault());
+            if (kw != null) CommitKeyword(kw);
+            e.Handled = true;
+            break;
+          }
+
+        case Key.Escape:
+          if (popKeywords.IsOpen) { popKeywords.IsOpen = false; e.Handled = true; }
+          break;
+
+        case Key.Back when tbKeywordInput.Text.Length == 0:
+          Vm.RemoveLastKeyword();                        // Backspace im leeren Feld löscht den letzten Chip
+          break;
+      }
+    }
+
+    private void KeywordItem_Click(object sender, MouseButtonEventArgs e)
+    {
+      if (sender is ListBoxItem { DataContext: string kw })
+      {
+        CommitKeyword(kw);
+        e.Handled = true;
+      }
+    }
+
+    private void MoveSelection(int delta)
+    {
+      int n = lbKeywords.Items.Count;
+      if (n == 0) return;
+      lbKeywords.SelectedIndex = Math.Clamp(lbKeywords.SelectedIndex + delta, 0, n - 1);
+      lbKeywords.ScrollIntoView(lbKeywords.SelectedItem);
+    }
+
+    private void CommitKeyword(string kw)
+    {
+      Vm.AddKeyword(kw);                                     // löst Baumfilter + Listen-Refresh aus
+
+      _suppressInput = true;
+      try { tbKeywordInput.Clear(); }
+      finally { _suppressInput = false; }
+      Vm.KeywordInput = "";
+
+      popKeywords.IsOpen = false;
+      tbKeywordInput.Focus();
+    }
+
+    // Klick außerhalb von Eingabefeld und Liste schließt das Popup
+    protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+    {
+      base.OnPreviewMouseDown(e);
+      if (popKeywords.IsOpen && !tbKeywordInput.IsMouseOver && !lbKeywords.IsMouseOver)
+        popKeywords.IsOpen = false;
+    }
+
+
+    private void RemoveChip_Click(object sender, RoutedEventArgs e)
+    {
+      if (sender is FrameworkElement { DataContext: string kw })
+        Vm.RemoveKeyword(kw);
+    }
   }
 
 }

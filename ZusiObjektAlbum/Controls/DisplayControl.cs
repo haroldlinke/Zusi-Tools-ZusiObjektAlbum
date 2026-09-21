@@ -41,8 +41,20 @@ namespace ZusiObjektAlbum.Controls
             set => SetValue(IsExpandedProperty, value);
         }
 
-        //---------------------------------------------------------------------
-        public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
+    //---------------------------------------------------------------------
+    public  static readonly DependencyProperty IsFilterVisibleProperty = DependencyProperty.Register(
+        "IsFilterVisible",
+        typeof(bool),
+        typeof(DisplayControl),
+        new PropertyMetadata(true));
+    public bool IsFilterVisible
+    {
+      get => (bool)GetValue(IsFilterVisibleProperty);
+      set => SetValue(IsFilterVisibleProperty, value);
+    }
+
+    //---------------------------------------------------------------------
+    public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
             "Title",
             typeof(string),
             typeof(DisplayControl),

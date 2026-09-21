@@ -1,21 +1,31 @@
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ZusiKlassenLib;
 using ZusiKlassenLib.Landscape;
 using ZusiObjektAlbum.Core;
+using ZusiObjektAlbum.Dialogs;
 using ZusiObjektAlbum.MVVM;
 using ZusiSimilaritySearch;
-using ZusiKlassenLib;
-using System.Collections.Specialized;
 
 namespace ZusiObjektAlbum.Controls;
+
+public sealed class QueryPhoto
+{
+  public required BitmapSource Original { get; set; }
+  public BitmapSource Preview { get; set; } = null!; // ggf. ohne Hintergrund
+  public string Label { get; init; } = "";
+}
 
 public partial class MainView : UserControl
 {
@@ -23,6 +33,8 @@ public partial class MainView : UserControl
   private static readonly string[] SupportedThumbnailExtensions = { ".png", ".jpg", ".jpeg" };
 
   private readonly ObservableCollection<ResultItem> _results = new();
+
+  private readonly ObservableCollection<QueryPhoto> _queryPhotos = new();
 
 
   // Werden beim ersten Suchlauf einmalig geladen und danach wiederverwendet -
@@ -37,10 +49,13 @@ public partial class MainView : UserControl
 
   private Window? _parentWindow;
 
+
+
   public MainView()
   {
     InitializeComponent();
     ResultsList.ItemsSource = _results;
+    PhotosList.ItemsSource = _queryPhotos;
     this.Unloaded += MainView_Unloaded;
   }
 
@@ -57,13 +72,32 @@ public partial class MainView : UserControl
     e.Handled = true;
   }
 
+  //private void DropArea_Drop(object sender, DragEventArgs e)
+  //{
+  //  string? path = GetFirstImagePath(e.Data);
+  //  if (path is not null)
+  //  {
+  //    AddPhoto(LoadBitmap(path), Path.GetFileName(path));
+  //  }
+  //}
+
   private void DropArea_Drop(object sender, DragEventArgs e)
   {
-    string? path = GetFirstImagePath(e.Data);
-    if (path is not null)
+    foreach (string path in GetImagePaths(e.Data))
     {
-      SetPhoto(path);
+      AddPhoto(LoadBitmap(path), Path.GetFileName(path));
     }
+  }
+
+  private static IEnumerable<string> GetImagePaths(IDataObject data)
+  {
+    if (!data.GetDataPresent(DataFormats.FileDrop))
+    {
+      return Enumerable.Empty<string>();
+    }
+
+    var files = (string[])data.GetData(DataFormats.FileDrop)!;
+    return files.Where(f => SupportedPhotoExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
   }
 
   private static string? GetFirstImagePath(IDataObject data)
@@ -88,14 +122,19 @@ public partial class MainView : UserControl
     DropArea.Focus(); // damit Ctrl+V danach greift, ohne extra hinklicken zu müssen
     var dialog = new OpenFileDialog
     {
-      Title = "Foto des realen Objekts auswählen",
+      Multiselect = true,
+      Title = "Foto(s) des realen Objekts auswählen",
       Filter = "Bilder (*.jpg;*.jpeg;*.png;*.bmp)|*.jpg;*.jpeg;*.png;*.bmp|Alle Dateien (*.*)|*.*"
     };
 
     var owner = Application.Current?.MainWindow;
     if (dialog.ShowDialog(owner) == true)
     {
-      SetPhoto(dialog.FileName);
+      //AddPhoto(LoadBitmap(dialog.FileName), Path.GetFileName(dialog.FileName));
+      foreach (string path in dialog.FileNames)
+      {
+        AddPhoto(LoadBitmap(path), Path.GetFileName(path));
+      }
     }
   }
 
@@ -111,22 +150,80 @@ public partial class MainView : UserControl
   //  StatusText.Text = $"Foto geladen: {Path.GetFileName(path)}";
   //}
 
-  private static BitmapImage LoadBitmap(string path)
+  //private static BitmapImage LoadBitmap(string path)
+  //{
+  //  var bitmap = new BitmapImage();
+  //  bitmap.BeginInit();
+  //  bitmap.CacheOption = BitmapCacheOption.OnLoad;
+  //  bitmap.UriSource = new Uri(path, UriKind.Absolute);
+  //  bitmap.EndInit();
+  //  bitmap.Freeze();
+  //  return bitmap;
+  //}
+
+private static BitmapSource LoadBitmap(string path)
+{
+  BitmapDecoder decoder = BitmapDecoder.Create(
+      new Uri(path, UriKind.Absolute), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+  BitmapFrame frame = decoder.Frames[0];
+
+  BitmapSource oriented = ApplyExifOrientation(frame);
+  if (oriented.CanFreeze && !oriented.IsFrozen)
   {
-    var bitmap = new BitmapImage();
-    bitmap.BeginInit();
-    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-    bitmap.UriSource = new Uri(path, UriKind.Absolute);
-    bitmap.EndInit();
-    bitmap.Freeze();
-    return bitmap;
+    oriented.Freeze();
+  }
+  return oriented;
+}
+
+private static BitmapSource ApplyExifOrientation(BitmapFrame frame)
+{
+  if (frame.Metadata is not BitmapMetadata metadata)
+  {
+    return frame;
   }
 
-  // ----------------------------------------------------------------
-  // Suche
-  // ----------------------------------------------------------------
+  int orientation;
+  try
+  {
+    // Standard-EXIF-Orientation-Tag (0x0112 = 274).
+    object? value = metadata.GetQuery("/app1/ifd/{ushort=274}");
+    if (value is null)
+    {
+      return frame; // kein EXIF vorhanden - unverändert
+    }
+    orientation = Convert.ToInt32(value);
+  }
+  catch
+  {
+    return frame; // kein lesbares EXIF - unverändert
+  }
 
-  private DateTime _indexLoadedAt = DateTime.MinValue;
+  if (orientation == 1)
+  {
+    return frame; // bereits korrekt orientiert
+  }
+
+  // Die 8 EXIF-Orientierungswerte, siehe exif.org / CIPA DC-008.
+  Transform transform = orientation switch
+  {
+    2 => new ScaleTransform(-1, 1),
+    3 => new RotateTransform(180),
+    4 => new ScaleTransform(1, -1),
+    5 => new TransformGroup { Children = { new RotateTransform(90), new ScaleTransform(-1, 1) } },
+    6 => new RotateTransform(90),
+    7 => new TransformGroup { Children = { new RotateTransform(270), new ScaleTransform(-1, 1) } },
+    8 => new RotateTransform(270),
+    _ => Transform.Identity
+  };
+
+  return new TransformedBitmap(frame, transform);
+}
+
+// ----------------------------------------------------------------
+// Suche
+// ----------------------------------------------------------------
+
+private DateTime _indexLoadedAt = DateTime.MinValue;
 
 
   //private void SetPhoto(string path)
@@ -141,6 +238,138 @@ public partial class MainView : UserControl
   //  _ = UpdatePhotoPreviewAsync();
   //}
 
+  private QueryPhoto? _selectedPhoto;
+
+  private void PhotosList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+  {
+    if (PhotosList.SelectedItem is QueryPhoto photo)
+    {
+      ShowInDropArea(photo);
+    }
+  }
+
+  private void ShowInDropArea(QueryPhoto photo)
+  {
+    _selectedPhoto = photo;
+    PhotoPreviewImage.Source = photo.Preview;
+    PhotoPreviewImage.Visibility = Visibility.Visible;
+    DropHintText.Visibility = Visibility.Collapsed;
+  }
+
+  private void AddPhoto(BitmapSource bitmap, string label)
+  {
+    if (bitmap.CanFreeze && !bitmap.IsFrozen)
+    {
+      bitmap.Freeze();
+    }
+
+    bool isFirstPhoto = _queryPhotos.Count == 0;
+
+    var photo = new QueryPhoto { Original = bitmap, Preview = bitmap, Label = label };
+    _queryPhotos.Add(photo);
+
+    SearchButton.IsEnabled = true;
+    StatusText.Text = $"{_queryPhotos.Count} Foto(s) ausgewählt.";
+
+    if (isFirstPhoto)
+    {
+      // Erstes Foto: automatisch in der Drop-Area zeigen, ohne dass man
+      // extra draufklicken muss. Löst PhotosList_SelectionChanged aus.
+      PhotosList.SelectedItem = photo;
+    }
+
+    _ = UpdatePhotoPreviewAsync(photo);
+  }
+
+  private void RemovePhoto(QueryPhoto photo)
+  {
+    bool wasSelected = _selectedPhoto == photo;
+    int index = _queryPhotos.IndexOf(photo);
+    _queryPhotos.Remove(photo);
+
+    if (_queryPhotos.Count == 0)
+    {
+      _selectedPhoto = null;
+      PhotoPreviewImage.Visibility = Visibility.Collapsed;
+      DropHintText.Visibility = Visibility.Visible;
+      SearchButton.IsEnabled = false;
+    }
+    else if (wasSelected)
+    {
+      int newIndex = Math.Min(index, _queryPhotos.Count - 1);
+      PhotosList.SelectedItem = _queryPhotos[newIndex]; // zeigt automatisch nach
+      SearchButton.IsEnabled = true;
+    }
+
+    StatusText.Text = $"{_queryPhotos.Count} Foto(s) ausgewählt.";
+  }
+
+  private async Task UpdatePhotoPreviewAsync(QueryPhoto photo)
+  {
+    if (RemoveBackgroundCheckBox.IsChecked != true)
+    {
+      photo.Preview = photo.Original;
+    }
+    else
+    {
+      try
+      {
+        if (_backgroundRemover is null)
+        {
+          string u2netPath = DataManager.Instance.u2netModelPath;
+          _backgroundRemover = await Task.Run(() => new BackgroundRemover(u2netPath));
+        }
+
+        photo.Preview = await Task.Run(() => _backgroundRemover.RemoveBackground(photo.Original));
+      }
+      catch (Exception ex)
+      {
+        photo.Preview = photo.Original;
+        StatusText.Text = $"Hintergrundentfernung fehlgeschlagen: {ex.Message}";
+      }
+    }
+
+    PhotosList.Items.Refresh(); // Thumbnail aktualisieren
+
+    if (_selectedPhoto == photo)
+    {
+      PhotoPreviewImage.Source = photo.Preview; // große Vorschau mit aktualisieren
+    }
+    SearchButton.IsEnabled = true;
+  }
+
+  private void CorrectPerspectiveButton_Click(object sender, RoutedEventArgs e)
+  {
+    if (_selectedPhoto is null)
+    {
+      return;
+    }
+
+    var window = new PerspectiveCorrectionWindow(_selectedPhoto.Original) { Owner = Window.GetWindow(this) };
+    if (window.ShowDialog() == true && window.Result != null)
+    {
+      _selectedPhoto.Original = window.Result;
+      _ = UpdatePhotoPreviewAsync(_selectedPhoto); // wendet ggf. Hintergrundentfernung erneut an
+    }
+  }
+
+  private async void RemoveBackgroundCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+  {
+    foreach (var photo in _queryPhotos.ToList())
+    {
+      await UpdatePhotoPreviewAsync(photo);
+    }
+  }
+
+  private void RemovePhotoButton_Click(object sender, RoutedEventArgs e)
+  {
+    if (sender is FrameworkElement fe && fe.Tag is QueryPhoto photo)
+    {
+      RemovePhoto(photo);
+    }
+  }
+
+
   private BitmapSource? _originalPhotoBitmap;
 
   private void SetPhoto(string path)
@@ -153,7 +382,8 @@ public partial class MainView : UserControl
   private void SetPhotoFromClipboard(BitmapSource bitmap)
   {
     _currentPhotoPath = null; // kein Dateipfad vorhanden - ist ok, wird nirgends mehr vorausgesetzt
-    SetPhotoFromBitmap(bitmap, "eingefügtes Bild (Zwischenablage)");
+    AddPhoto(bitmap, "eingefügtes Bild (Zwischenablage)");
+    //SetPhotoFromBitmap(bitmap, "eingefügtes Bild (Zwischenablage)");
   }
 
   private void SetPhotoFromBitmap(BitmapSource bitmap, string sourceLabel)
@@ -182,10 +412,10 @@ public partial class MainView : UserControl
     _ = UpdatePhotoPreviewAsync(); // berücksichtigt automatisch den aktuellen Stand der "Hintergrund entfernen"-Checkbox
   }
 
-  private async void RemoveBackgroundCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
-  {
-    await UpdatePhotoPreviewAsync();
-  }
+  //private async void RemoveBackgroundCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+  //{
+  //  await UpdatePhotoPreviewAsync();
+  //}
 
   private async Task UpdatePhotoPreviewAsync()
   {
@@ -193,7 +423,7 @@ public partial class MainView : UserControl
     {
       return;
     }
-    string u2netPath = DataManager.Instance.rembgModelPath;
+    string u2netPath = DataManager.Instance.u2netModelPath;
     if (!File.Exists(u2netPath))
     {
       MessageBox.Show(
@@ -338,7 +568,7 @@ public partial class MainView : UserControl
 
       if (imagePath != null)
       {
-        SetPhoto(imagePath); // vorhandener Datei-Ladeweg, inkl. Freeze() in LoadBitmap()
+        AddPhoto(LoadBitmap(imagePath), Path.GetFileName(imagePath));
         return;
       }
 
@@ -351,7 +581,7 @@ public partial class MainView : UserControl
 
   private async void SearchButton_Click(object sender, RoutedEventArgs e)
   {
-    if (_originalPhotoBitmap is null)
+    if (_queryPhotos.Count == 0)
     {
       return;
     }
@@ -397,42 +627,15 @@ public partial class MainView : UserControl
         _index = await Task.Run(() => EmbeddingIndex.LoadFromFile(indexPath));
         _indexLoadedAt = indexFileTime;
       }
+      var embeddings = new List<float[]>();
+      foreach (var photo in _queryPhotos)
+      {
+        StatusText.Text = $"Berechne Embedding ({embeddings.Count + 1}/{_queryPhotos.Count})...";
+        embeddings.Add(await Task.Run(() => _embedder.ComputeEmbedding(photo.Preview)));
+      }
 
-      StatusText.Text = "Berechne Embedding für das Foto...";
-      //float[] queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(_currentPhotoPath));
-
-      var previewBitmap = (BitmapSource)PhotoPreviewImage.Source;
-      float[] queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(previewBitmap));
-
-
-//      float[] queryEmbedding;
-
-//if (RemoveBackgroundCheckBox.IsChecked == true)
-//{
-//    if (_backgroundRemover is null)
-//    {
-//        StatusText.Text = "Lade Hintergrund-Entfernungs-Modell...";
-//        string u2netPath = DataManager.Instance.u2netModelPath; // Pfad analog zu modelPath/indexPath anlegen
-//  _backgroundRemover = await Task.Run(() => new BackgroundRemover(u2netPath));
-//    }
-
-//StatusText.Text = "Entferne Hintergrund...";
-//    BitmapSource photoBitmap = LoadBitmap(_currentPhotoPath); // vorhandene Hilfsmethode aus dem Foto-Preview
-//BitmapSource cleaned = await Task.Run(() => _backgroundRemover.RemoveBackground(photoBitmap));
-
-//StatusText.Text = "Berechne Embedding für das Foto...";
-//    queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(cleaned)); // BitmapSource-Overload, kennt ClipEmbedder schon
-//}
-//else
-//{
-//  StatusText.Text = "Berechne Embedding für das Foto...";
-//  queryEmbedding = await Task.Run(() => _embedder.ComputeEmbedding(_currentPhotoPath));
-//}
-
-
-
-StatusText.Text = "Suche ähnliche Objekte...";
-      var matches = await Task.Run(() => _index.Search(queryEmbedding, topN: 100));
+      StatusText.Text = "Suche ähnliche Objekte...";
+      var matches = await Task.Run(() => _index.SearchMulti(embeddings, topN: 100));
 
       foreach (var match in matches)
       {
@@ -442,7 +645,7 @@ StatusText.Text = "Suche ähnliche Objekte...";
 
 
         string local_sourcePath = "";
-        if (match.SourcePath.StartsWith(DataManager.Instance.objectsFolder))
+        if (match.SourcePath.StartsWith(DataManager.Instance.objectsFolder)) // correct sourcepath to real source path of current ZUSI installation
         {
           local_sourcePath = match.SourcePath.Substring(DataManager.Instance.objectsFolder.Length);
           DataPathType dtp = DataPathType.Official;
@@ -456,7 +659,7 @@ StatusText.Text = "Suche ähnliche Objekte...";
 
         _results.Add(new ResultItem
         {
-          ObjectId = match.ObjectId,
+          ObjectId = match.ObjectId.Substring(0,match.ObjectId.Length-9), // remove hash
           Score = match.Score,
           BestView = match.BestView,
           SourcePath = local_sourcePath,

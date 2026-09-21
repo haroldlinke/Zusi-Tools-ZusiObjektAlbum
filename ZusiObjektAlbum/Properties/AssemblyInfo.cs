@@ -104,6 +104,7 @@ using System.Windows;
 
 // 8.0.3 - 16.9.2026
 // Einfügen Bild mit ctrl+V überarbeitet, sodass auch Bilder aus der Zwischenablage eingefügt werden können, die mit ctrl-c aus dem Explorer kopiert wurden
+// Kopieren von Dateipfad von 3D-Modelle in die Zwischenablage erweitert
 
 
-[assembly: AssemblyVersion("8.0.3")]
+[assembly: AssemblyVersion("8.0.4")]

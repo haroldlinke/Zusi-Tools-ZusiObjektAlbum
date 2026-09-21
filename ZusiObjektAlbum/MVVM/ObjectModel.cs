@@ -4,17 +4,19 @@ using SovomaLib.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using ZusiKlassenLib;
 using ZusiKlassenLib.Landscape;
 
 namespace ZusiObjektAlbum.MVVM
 {
-  public sealed class ObjectModel : BaseTreeViewViewModel<ObjectModel, ILandscapeObject>
+  public sealed class ObjectModel : ZusiObjektAlbum.Sovoma.BaseTreeViewViewModel<ObjectModel, ILandscapeObject>
   {
-    private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+    private static readonly ILog _log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
     private static readonly string[] _folderToExclude = new string[]
     {
@@ -41,6 +43,7 @@ namespace ZusiObjektAlbum.MVVM
       string path = Zusi.GetAbsolutePathOf("RailwayObjects\\", ref dtp);
       if (Directory.Exists(path))
       {
+        _log.Debug("Enumerating RailwayObjects in " + path);
         objects = LandscapeObjects.EnumerateLandscapeObjects_(path, true);
         ObjectModel railwayObjects = new("RailwayObjects", 0);
         GroupObjects(railwayObjects, objects, path, 1);
@@ -62,6 +65,7 @@ namespace ZusiObjektAlbum.MVVM
       path = Zusi.GetAbsolutePathOf("Catenary\\", ref dtp);
       if (Directory.Exists(path))
       {
+        _log.Debug("Enumerating Catenary objects in " + path);
         objects = LandscapeObjects.EnumerateLandscapeObjects_(path, true);
         ObjectModel catenaryObjects = new("Catenary", 0);
         GroupObjects(catenaryObjects, objects, path, 1);
@@ -83,6 +87,7 @@ namespace ZusiObjektAlbum.MVVM
       path = Zusi.GetAbsolutePathOf("Terrain\\", ref dtp);
       if (Directory.Exists(path))
       {
+        _log.Debug("Enumerating Terrain objects in " + path);
         objects = LandscapeObjects.EnumerateLandscapeObjects_(path, true);
         ObjectModel terrainObjects = new("Terrain", 0);
         GroupObjects(terrainObjects, objects, path, 1);
@@ -91,6 +96,7 @@ namespace ZusiObjektAlbum.MVVM
 
 
       // Streckenobjekte
+      _log.Debug("Enumerating Route objects.");
       ObjectModel routeObjects = new("Streckenobjekte", 1);
       List<ObjectModel> tmpObjects = new();
       bool alternatePath = false;
@@ -99,8 +105,10 @@ namespace ZusiObjektAlbum.MVVM
         path = p + "Routes\\";
         if (Directory.Exists(p))
         {
+          _log.Debug("Enumerating Route objects in " + path);
           foreach (string folder in Directory.EnumerateDirectories(path, "Objekt*", SearchOption.AllDirectories))
           {
+            _log.Debug("Enumerating Route objects in " + folder);
             string f = folder.StripPrefix(path);
             string[] ss = f.Split('\\');
 
@@ -278,7 +286,7 @@ namespace ZusiObjektAlbum.MVVM
       }
       catch (Exception ex)
       {
-        Log.Error(ex.ToString());
+        _log.Error(ex.ToString());
       }
     }
 
@@ -297,7 +305,7 @@ namespace ZusiObjektAlbum.MVVM
         if (_erroneous != value)
         {
           _erroneous = value;
-          OnPropertyChanged("IsErroneous");
+          RaisePropertyChanged("IsErroneous");
         }
       }
     }
@@ -311,14 +319,14 @@ namespace ZusiObjektAlbum.MVVM
         if (_readonly != value)
         {
           _readonly = value;
-          OnPropertyChanged("IsReadOnly");
+          RaisePropertyChanged("IsReadOnly");
         }
       }
     }
 
     //---------------------------------------------------------------------
     public ObjectModel(string folder, int level)
-        : base(null, level <= 1, false)
+        : base(null, level <= 1, false, true)
     {
       _displayName = folder;
       IsBold = true;
@@ -326,7 +334,7 @@ namespace ZusiObjektAlbum.MVVM
 
     //---------------------------------------------------------------------
     public ObjectModel(ILandscapeObject obj)
-        : base(null, false, false)
+        : base(null, false, false, true)
     {
       if (obj is LandscapeObject lo)
       {
@@ -338,5 +346,20 @@ namespace ZusiObjektAlbum.MVVM
       }
       _object = obj;
     }
+
+    //private bool _isFilterVisible = true;
+    //public  bool IsFilterVisible
+    //{
+    //  get => _isFilterVisible;
+    //  set { if (_isFilterVisible != value) { _isFilterVisible = value; RaisePropertyChanged("IsFilterVisible"); } }
+    //}
+
+    public bool? ExpandedBeforeFilter { get; set; }   // merkt sich den Zustand vor dem Filtern
+
+
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void RaisePropertyChanged([CallerMemberName] string name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
   }
+
 }

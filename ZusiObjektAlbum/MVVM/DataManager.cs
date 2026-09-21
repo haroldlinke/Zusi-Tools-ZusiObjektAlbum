@@ -4,15 +4,19 @@ using SovomaLib.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using ZusiKlassenLib.Landscape;
 using ZusiObjektAlbum.Miscellaneous;
+using ZusiSimilaritySearch;
 
 namespace ZusiObjektAlbum.MVVM
 {
@@ -249,13 +253,129 @@ namespace ZusiObjektAlbum.MVVM
     public string modelPath = "";
     public string indexPath = "";
     public string objectsFolder = "C:\\Program Files\\Zusi3\\_ZusiData";
-    public string rembgModelPath = ""; //"C:\\Users\\Public\\Documents\\Zusi3\\_Tools\\ZusiObjektAlbum\\u2net.onnx";
+    public string u2netModelPath = ""; //"C:\\Users\\Public\\Documents\\Zusi3\\_Tools\\ZusiObjektAlbum\\u2net.onnx";
 
     //---------------------------------------------------------------------
     public DataManager()
     {
       EnumObjectsAsync();
+
+      //KeywordView = new ListCollectionView(_keywords.AllKeywords.ToList());
+      //KeywordView.Filter = o =>
+      //{
+      //  var text = FilterText?.Trim();
+      //  return string.IsNullOrEmpty(text) ||
+      //         ((string)o).StartsWith(text, StringComparison.OrdinalIgnoreCase);
+      //};
+      KeywordView = new ListCollectionView(_keywords.AllKeywords.ToList());
+      KeywordView.Filter = o =>
+      {
+        var kw = (string)o;
+        if (SelectedKeywords.Contains(kw, StringComparer.OrdinalIgnoreCase)) return false; // schon gewählt
+        var input = KeywordInput?.Trim();
+        return string.IsNullOrEmpty(input) || kw.StartsWith(input, StringComparison.OrdinalIgnoreCase);
+      };
+      SelectedKeywords.CollectionChanged += (_, _) => { ApplyFilter(); KeywordView.Refresh(); };
     }
+
+
+    public static readonly DependencyProperty FilterTextProperty =
+    DependencyProperty.Register(nameof(FilterText), typeof(string), typeof(DataManager),
+        new PropertyMetadata("", (d, e) => ((DataManager)d).ApplyFilter()));
+
+    public string FilterText
+    {
+      get => (string)GetValue(FilterTextProperty);
+      set => SetValue(FilterTextProperty, value);
+    }
+
+    public ObservableCollection<string> SelectedKeywords { get; } = new();
+    public ICollectionView KeywordView { get; }
+
+
+    private bool _isFilterVisible = true;
+    public bool IsFilterVisible
+    {
+      get => _isFilterVisible;
+      set { if (_isFilterVisible == value) return; _isFilterVisible = value; RaisePropertyChanged(nameof(IsFilterVisible)); }
+    }
+
+    public bool? ExpandedBeforeFilter { get; set; }   // normale Property, braucht keine Benachrichtigung
+
+
+    private readonly KeywordIndex _keywords = KeywordIndex.Load("D:\\Zusi\\displayname_keywords.csv");
+
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void RaisePropertyChanged([CallerMemberName] string name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    private string _keywordInput = "";
+    public string KeywordInput
+    {
+      get => _keywordInput;
+      set { if (_keywordInput == value) return; _keywordInput = value; /* Benachrichtigung */ KeywordView.Refresh(); }
+    }
+
+    public void AddKeyword(string kw)
+    {
+      if (!string.IsNullOrWhiteSpace(kw) && !SelectedKeywords.Contains(kw, StringComparer.OrdinalIgnoreCase))
+        SelectedKeywords.Add(kw);
+    }
+    public void RemoveKeyword(string kw) => SelectedKeywords.Remove(kw);
+
+    public void RemoveLastKeyword() { if (SelectedKeywords.Count > 0) SelectedKeywords.RemoveAt(SelectedKeywords.Count - 1); }
+
+    public void ClearKeywords() => SelectedKeywords.Clear();
+
+
+    private void ApplyFilter()
+    {
+      //var terms = FilterText.Split(new[] { ' ', ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+      //  var terms = string.IsNullOrWhiteSpace(FilterText)
+      //? Array.Empty<string>()
+      //: new[] { FilterText.Trim() };
+
+      string[] terms = SelectedKeywords.ToArray();
+
+      foreach (var root in Objects)
+        ApplyFilter(root, terms, false);
+
+      KeywordView.Refresh();
+    }
+
+    private bool ApplyFilter(ObjectModel node, string[] terms,bool parentMatch)
+    {
+      bool anyChildVisible = false;
+
+      bool selfMatch = terms.Length == 0 || parentMatch || _keywords.Matches(node.DisplayName, terms);
+      foreach (var child in node.Children)              // kein Short-Circuit, alle Kinder müssen aktualisiert werden
+        anyChildVisible |= ApplyFilter(child, terms, selfMatch);
+
+      //bool selfMatch = terms.Length == 0 || _keywords.Matches(node.DisplayName, terms);
+      node.IsFilterVisible = selfMatch || anyChildVisible;
+
+      if (node.Children.Count == 0 & terms.Count() != 0)
+        node.IsErroneous = node.IsFilterVisible;
+
+      if (selfMatch)
+      {
+        _log.Debug("SelfMatch = True");
+      }
+
+      if (terms.Length > 0)
+      {
+        node.ExpandedBeforeFilter ??= node.IsExpanded;
+        node.IsExpanded = anyChildVisible;            // Eltern von Treffern aufklappen
+      }
+      else if (node.ExpandedBeforeFilter is bool was)
+      {
+        node.IsExpanded = was;                        // Filter gelöscht: alten Zustand wiederherstellen
+        node.ExpandedBeforeFilter = null;
+      }
+      return node.IsFilterVisible;
+    }
+
 
     //---------------------------------------------------------------------
     public void OnImportObject(object sender, ExecutedRoutedEventArgs e)
@@ -505,6 +625,8 @@ namespace ZusiObjektAlbum.MVVM
     //---------------------------------------------------------------------
     private async void EnumObjectsAsync()
     {
+      
+      _log.Debug("Starting to enumerate objects.");
       ObservableCollection<ObjectModel> temp = await Task.Run(() => { return ObjectModel.Create(); });
       foreach (ObjectModel o in temp)
       {
