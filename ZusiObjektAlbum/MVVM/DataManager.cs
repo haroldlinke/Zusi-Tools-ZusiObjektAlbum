@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -252,7 +253,8 @@ namespace ZusiObjektAlbum.MVVM
 
     public string modelPath = "";
     public string indexPath = "";
-    public string objectsFolder = "C:\\Program Files\\Zusi3\\_ZusiData";
+    public string keywordIndexPath = "";
+    public string objectsFolder = "";
     public string u2netModelPath = ""; //"C:\\Users\\Public\\Documents\\Zusi3\\_Tools\\ZusiObjektAlbum\\u2net.onnx";
 
     //---------------------------------------------------------------------
@@ -267,6 +269,8 @@ namespace ZusiObjektAlbum.MVVM
       //  return string.IsNullOrEmpty(text) ||
       //         ((string)o).StartsWith(text, StringComparison.OrdinalIgnoreCase);
       //};
+      keywordIndexPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName), "Resources\\displayname_keywords.csv");
+      _keywords = KeywordIndex.Load(keywordIndexPath);
       KeywordView = new ListCollectionView(_keywords.AllKeywords.ToList());
       KeywordView.Filter = o =>
       {
@@ -303,7 +307,7 @@ namespace ZusiObjektAlbum.MVVM
     public bool? ExpandedBeforeFilter { get; set; }   // normale Property, braucht keine Benachrichtigung
 
 
-    private readonly KeywordIndex _keywords = KeywordIndex.Load("D:\\Zusi\\displayname_keywords.csv");
+    private readonly KeywordIndex _keywords = null;
 
     public event PropertyChangedEventHandler PropertyChanged;
     private void RaisePropertyChanged([CallerMemberName] string name = null)

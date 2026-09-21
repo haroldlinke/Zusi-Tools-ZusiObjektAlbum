@@ -86,4 +86,10 @@
     <None Include="App.config" />
     <Resource Include="mainicon.ico" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\displayname_keywords.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

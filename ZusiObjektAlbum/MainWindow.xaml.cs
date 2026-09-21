@@ -4,6 +4,7 @@ using SovomaLib.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -154,6 +155,7 @@ namespace ZusiObjektAlbum
       DataManager.Instance.modelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "vision_model.onnx");
       DataManager.Instance.u2netModelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "u2net.onnx");
       DataManager.Instance.indexPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "index.bin");
+     
 
       if (!_dataLoadComplete)
       {
