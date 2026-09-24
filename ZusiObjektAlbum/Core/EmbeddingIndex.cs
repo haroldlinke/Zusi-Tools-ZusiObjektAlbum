@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using ZusiObjektAlbum.MVVM;
 
 namespace ZusiObjektAlbum.Core;
 
@@ -135,6 +137,12 @@ public sealed class EmbeddingIndex
 
     foreach (var entry in _entries)
     {
+      //check if keyword filter is set and if so, check if the object has the keyword
+      if (DataManager.Instance.MatchesKeywords(entry.ObjectId) == false)
+      {
+        continue;
+      }
+
       float score = CosineSimilarity(query, entry.Vector);
 
       if (!bestPerObject.TryGetValue(entry.ObjectId, out var current) || score > current.Score)

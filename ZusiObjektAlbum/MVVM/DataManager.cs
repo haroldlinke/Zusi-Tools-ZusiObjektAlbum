@@ -359,25 +359,27 @@ namespace ZusiObjektAlbum.MVVM
       //bool selfMatch = terms.Length == 0 || _keywords.Matches(node.DisplayName, terms);
       node.IsFilterVisible = selfMatch || anyChildVisible;
 
-      if (node.Children.Count == 0 & terms.Count() != 0)
-        node.IsErroneous = node.IsFilterVisible;
-
-      if (selfMatch)
-      {
-        _log.Debug("SelfMatch = True");
-      }
-
       if (terms.Length > 0)
       {
         node.ExpandedBeforeFilter ??= node.IsExpanded;
         node.IsExpanded = anyChildVisible;            // Eltern von Treffern aufklappen
+        if (node.Children.Count == 0)
+          node.IsErroneous = true; // Filter aktiv: nur Objekte ohne Kinder in Rot markieren (fehlerhaft) markieren
       }
       else if (node.ExpandedBeforeFilter is bool was)
       {
         node.IsExpanded = was;                        // Filter gelöscht: alten Zustand wiederherstellen
         node.ExpandedBeforeFilter = null;
+        node.IsErroneous = false;
       }
       return node.IsFilterVisible;
+    }
+
+    public bool MatchesKeywords(string ObjectId)
+    {
+      string[] terms = SelectedKeywords.ToArray();
+      string ObjectId2 = ObjectId.Substring(0, ObjectId.Length - 9); // remove Hash
+      return terms.Length == 0 || _keywords.Matches(ObjectId2, terms);
     }
 
 

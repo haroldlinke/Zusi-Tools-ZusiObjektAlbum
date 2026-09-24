@@ -107,4 +107,4 @@ using System.Windows;
 // Kopieren von Dateipfad von 3D-Modelle in die Zwischenablage erweitert
 
 
-[assembly: AssemblyVersion("8.0.4")]
+[assembly: AssemblyVersion("8.0.5")]

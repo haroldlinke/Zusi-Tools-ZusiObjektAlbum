@@ -152,10 +152,12 @@ namespace ZusiObjektAlbum
         Directory.CreateDirectory(ObjektAlbumBaseFolder);
       }
 
-      DataManager.Instance.modelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "vision_model.onnx");
+      //DataManager.Instance.modelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "vision_model.onnx");
+      DataManager.Instance.modelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "dinov2_vits14.onnx");
       DataManager.Instance.u2netModelPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "u2net.onnx");
-      DataManager.Instance.indexPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "index.bin");
-     
+      //DataManager.Instance.indexPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "index.bin");
+      DataManager.Instance.indexPath = System.IO.Path.Combine(ObjektAlbumBaseFolder, "index_dinov2.bin");
+
 
       if (!_dataLoadComplete)
       {
@@ -350,6 +352,31 @@ namespace ZusiObjektAlbum
       string onnxModel = DataManager.Instance.modelPath;
       string indexFile = DataManager.Instance.indexPath;
 
+      //if (!System.IO.File.Exists(indexFile))
+      //{
+      //  MessageBox.Show(
+      //      Window.GetWindow(this),
+      //      $"Es wurde noch keine index.bin gefunden unter:\n{indexFile}\n\n" +
+      //      "Bitte zuerst über \"Tools \u2192 Index objects\" die Objektdatenbank indizieren.\n" +
+      //      "oder über \"Tools \u2192 Index von Github herunerladen\" den Objektindex herunterladen.",
+      //      "Kein Index vorhanden",
+      //      MessageBoxButton.OK,
+      //      MessageBoxImage.Warning);
+      //  return;
+      //}
+
+      if (!System.IO.File.Exists(onnxModel))
+      {
+        MessageBox.Show(
+            Window.GetWindow(this),
+            $"Es wurde noch kein ONNX-Model gefunden unter:\n{onnxModel}\n\n" +
+            "Bitte zuerst über \"Tools \u2192 Dinov2-Model von Github herunterladen\" das Modell herunterladen.",
+            "Kein ONNX-Model vorhanden",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+        return;
+      }
+
       var progress = new Progress<string>(msg => DataManager.Instance.SetStatusMessage(msg));
       _exportCts = new CancellationTokenSource();
 
@@ -362,16 +389,16 @@ namespace ZusiObjektAlbum
       try
       {
         await ZusiObjektAlbum.Similaritysearch.BatchImageExporter.ExportAndIndexAllAsync(
-            imageFolder, onnxModel, indexFile, progress, _exportCts.Token);
+            imageFolder, onnxModel, indexFile, progress, _exportCts.Token, DataManager.Instance.Objects);
 
         wasCancelled = _exportCts.IsCancellationRequested;
 
-        MessageBox.Show(this, "Export & Indexierung abgeschlossen.", "Fertig",
+        MessageBox.Show(this, "Indexierung abgeschlossen.", "Fertig",
             MessageBoxButton.OK, MessageBoxImage.Information);
       }
       catch (Exception ex)
       {
-        MessageBox.Show(this, ex.Message, "Fehler bei Export/Indexierung",
+        MessageBox.Show(this, ex.Message, "Fehler bei Indexierung",
             MessageBoxButton.OK, MessageBoxImage.Error);
         return;
       }
@@ -568,9 +595,9 @@ namespace ZusiObjektAlbum
 
     // URLs auf euer Repo anpassen. Für Dateien >100 MB (z.B. das ONNX-Modell)
     // unbedingt eine GitHub-Release-Asset-URL verwenden, nicht raw.githubusercontent.com.
-    private const string OnnxModelUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/vision_model.onnx";
+    private const string OnnxModelUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/dinov2_vits14.onnx";
     private const string OnnxRemBgModelUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/u2net.onnx";
-    private const string IndexUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/index.bin";
+    private const string IndexUrl = "https://github.com/haroldlinke/Zusi-Tools-ZusiObjektAlbum/releases/download/V8.0.1/index_dinov2.bin";
 
     private async void OnDownloadIndex(object sender, RoutedEventArgs e)
     {
@@ -733,21 +760,6 @@ namespace ZusiObjektAlbum
         MessageBox.Show(this, ex.Message, "Fehler beim Kopieren des Pfads", MessageBoxButton.OK, MessageBoxImage.Error);
       }
     }
-
-    //private void Keywords_PreviewKeyUp(object sender, KeyEventArgs e)
-    //{
-    //  if (e.Key is Key.Up or Key.Down or Key.Left or Key.Right
-    //            or Key.Enter or Key.Escape or Key.Tab)
-    //    return;
-
-    //  cbKeywords.IsDropDownOpen = true;
-    //}
-
-    //private void ClearKeyword_Click(object sender, RoutedEventArgs e)
-    //{
-    //  cbKeywords.Text = string.Empty;
-    //  cbKeywords.Focus();
-    //}
 
     private DataManager Vm => (DataManager)DataContext;   // Typ anpassen
 

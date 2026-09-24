@@ -40,7 +40,7 @@ public partial class MainView : UserControl
   // Werden beim ersten Suchlauf einmalig geladen und danach wiederverwendet -
   // Modell-Laden und Index-Laden sind die teuren Schritte, die man nicht pro
   // Anfrage wiederholen möchte.
-  private ClipEmbedder? _embedder;
+  private IImageEmbedder? _embedder;
   private EmbeddingIndex? _index;
 
   private string? _currentPhotoPath;
@@ -595,7 +595,8 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       MessageBox.Show(
           Window.GetWindow(this),
           $"Es wurde noch keine index.bin gefunden unter:\n{indexPath}\n\n" +
-          "Bitte zuerst über \"Tools \u2192 Index objects\" die Objektdatenbank indizieren.",
+          "Bitte zuerst über \"Tools \u2192 Index objects\" die Objektdatenbank indizieren.\n"+
+          "oder über \"Tools \u2192 Index von Github herunerladen\" den Objektindex herunterladen.",
           "Kein Index vorhanden",
           MessageBoxButton.OK,
           MessageBoxImage.Warning);
@@ -611,14 +612,9 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       if (_embedder is null)
       {
         StatusText.Text = "Lade ONNX-Modell...";
-        _embedder = await Task.Run(() => new ClipEmbedder(modelPath));
+        //_embedder = await Task.Run(() => new ClipEmbedder(modelPath));
+        _embedder = await Task.Run(() => new Dinov2Embedder(modelPath));
       }
-
-      //if (_index is null)
-      //{
-      //  StatusText.Text = "Lade Embedding-Index...";
-      //  _index = await Task.Run(() => EmbeddingIndex.LoadFromFile(indexPath));
-      //}
 
       DateTime indexFileTime = File.GetLastWriteTimeUtc(indexPath);
       if (_index is null || indexFileTime > _indexLoadedAt)
@@ -639,11 +635,12 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
 
       foreach (var match in matches)
       {
-        
-
+        //check if keyword filter is set and if so, check if the object has the keyword - moved this to the searchMulti method in EmbeddingIndex.cs
+        //if (DataManager.Instance.MatchesKeywords(match.ObjectId) == false)
+        //{
+        //  continue;
+        //}
         // replace zusi path saved in index.bin with local zusi path
-
-
         string local_sourcePath = "";
         if (match.SourcePath.StartsWith(DataManager.Instance.objectsFolder)) // correct sourcepath to real source path of current ZUSI installation
         {
@@ -689,7 +686,7 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
 
   private void SetBusy(bool busy)
   {
-    SearchButton.IsEnabled = !busy && _currentPhotoPath is not null;
+    SearchButton.IsEnabled = !busy; // && _currentPhotoPath is not null;
     ProgressIndicator.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
   }
 

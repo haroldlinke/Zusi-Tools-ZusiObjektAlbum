@@ -57,7 +57,11 @@ public sealed class KeywordIndex
   /// Alle Suchbegriffe müssen zu mindestens einem Schlagwort passen (UND, Teilstring, ohne Groß-/Kleinschreibung).
   public bool Matches(string ObjectId, string[] terms)
   {
-    if (!_map.TryGetValue(ObjectId, out var kws)) return false;
+    if (!_map.TryGetValue(ObjectId, out var kws))
+    {
+      //_log.Debug("Keine Schlagworte für Objekt " + ObjectId);
+      return terms.Any(t => ObjectId.Contains(t, StringComparison.OrdinalIgnoreCase)); // check if the object id itself contains any of the terms
+    }
     //return terms.All(t => kws.Any(k => k.Contains(t, StringComparison.OrdinalIgnoreCase))); //UND
     return terms.Any(t => kws.Any(k => k.Contains(t, StringComparison.OrdinalIgnoreCase))); // ODER
   }

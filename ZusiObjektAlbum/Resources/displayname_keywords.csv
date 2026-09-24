@@ -7313,3 +7313,7 @@ Zwingenberg EG;Empfangsgebäude,FassadeBeige,DachBraun
 Darmstadt Sued EG;Empfangsgebäude,FassadeGrau,DachBraun
 Ne14 verdeckt;Signal
 Pogeez Stw Pof;Stellwerk,FassadeZiegel,DachGrau
+dummy1;Haus
+RailwayObjects;Eisenbahn
+Catenary;Fahrleitung, Oberleitung
+Terrain;Landschaft

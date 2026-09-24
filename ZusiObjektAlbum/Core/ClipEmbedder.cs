@@ -1,8 +1,5 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +8,7 @@ using System.Windows.Media.Imaging;
 
 namespace ZusiObjektAlbum.Core;
 
+/// 
 /// <summary>
 /// Lädt ein CLIP-Vision-ONNX-Modell und berechnet daraus L2-normierte Embeddings für Bilder.
 ///
@@ -26,7 +24,7 @@ namespace ZusiObjektAlbum.Core;
 /// CLIP-Normalisierung) und L2-normierte Vektoren, sind also untereinander
 /// direkt vergleichbar.
 /// </summary>
-public sealed class ClipEmbedder : IDisposable
+public sealed class ClipEmbedder : IImageEmbedder
 {
     private const string InputName = "pixel_values";
     private const int ImageSize = 224;
@@ -51,16 +49,16 @@ public sealed class ClipEmbedder : IDisposable
     /// </summary>
     public float[] ComputeEmbedding(string imagePath)
     {
-        using var image = Image.Load<Rgb24>(imagePath);
-        var tensor = PreprocessImageSharp(image);
-        return RunAndNormalize(tensor);
-    }
+    BitmapSource bitmap = ImageFileLoader.Load(imagePath);
+    return ComputeEmbedding(bitmap);
 
-    /// <summary>
-    /// Für bereits im Speicher vorliegende WPF-Bilder (z.B. direkt aus
-    /// RenderTargetBitmap) - ohne Umweg über Datei/PNG-Codec.
-    /// </summary>
-    public float[] ComputeEmbedding(BitmapSource source)
+  }
+
+  /// <summary>
+  /// Für bereits im Speicher vorliegende WPF-Bilder (z.B. direkt aus
+  /// RenderTargetBitmap) - ohne Umweg über Datei/PNG-Codec.
+  /// </summary>
+  public float[] ComputeEmbedding(BitmapSource source)
     {
         var tensor = PreprocessBitmapSource(source);
         return RunAndNormalize(tensor);
@@ -78,32 +76,6 @@ public sealed class ClipEmbedder : IDisposable
         float[] output = results.First().AsEnumerable<float>().ToArray();
 
         return Normalize(output);
-    }
-
-    //---------------------------------------------------------------------
-    private static DenseTensor<float> PreprocessImageSharp(Image<Rgb24> image)
-    {
-        image.Mutate(ctx => ctx.Resize(new ResizeOptions
-        {
-            Size = new Size(ImageSize, ImageSize),
-            Mode = ResizeMode.Stretch
-        }));
-
-        var tensor = new DenseTensor<float>(new[] { 1, 3, ImageSize, ImageSize });
-
-        for (int y = 0; y < ImageSize; y++)
-        {
-            for (int x = 0; x < ImageSize; x++)
-            {
-                Rgb24 pixel = image[x, y];
-
-                tensor[0, 0, y, x] = (pixel.R / 255f - Mean[0]) / Std[0];
-                tensor[0, 1, y, x] = (pixel.G / 255f - Mean[1]) / Std[1];
-                tensor[0, 2, y, x] = (pixel.B / 255f - Mean[2]) / Std[2];
-            }
-        }
-
-        return tensor;
     }
 
     //---------------------------------------------------------------------
