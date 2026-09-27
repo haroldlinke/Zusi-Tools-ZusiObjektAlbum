@@ -39,7 +39,7 @@ namespace ZusiObjektAlbum
   /// </summary>
   public partial class MainWindow : Window
   {
-    private static readonly ILog Log = LogManager.GetLogger(typeof(MainWindow));
+    private static readonly ILog _log = LogManager.GetLogger(typeof(MainWindow));
 
     private bool _dataLoadComplete;
 
@@ -348,6 +348,9 @@ namespace ZusiObjektAlbum
 
     private async void OnIndexObjects(object sender, ExecutedRoutedEventArgs e)
     {
+    }
+    private async void OnIndexObjects2(object sender, RoutedEventArgs e)
+    {
       string? imageFolder = null; // "D:\\Zusi\\ObjectImages";
       string onnxModel = DataManager.Instance.modelPath;
       string indexFile = DataManager.Instance.indexPath;
@@ -369,8 +372,9 @@ namespace ZusiObjektAlbum
       {
         MessageBox.Show(
             Window.GetWindow(this),
-            $"Es wurde noch kein ONNX-Model gefunden unter:\n{onnxModel}\n\n" +
-            "Bitte zuerst über \"Tools \u2192 Dinov2-Model von Github herunterladen\" das Modell herunterladen.",
+            $"Für die Ähnlichkeitssuche muß ein ONNX-Model zum Erstellen des Fingerabdrucks der 3D-Objekte vorhanden sein.\n" +
+            $"Es wurde noch kein ONNX-Model zum Erstellen des Fingerabdrucks der 3D-Objekte gefunden unter:\n{onnxModel}\n\n" +
+            "Bitte zuerst über \"Tools \u2192 Dinov2-Modell für Fingerabdruckerstellung von GitHub herunterladen...\" das Modell herunterladen.",
             "Kein ONNX-Model vorhanden",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
@@ -486,6 +490,7 @@ namespace ZusiObjektAlbum
 
             DataPathType dtp = DataPathType.Unknown;
             string filename = fullpath; // Zusi.GetRelativePathOf(fullpath, ref dtp);
+            _log.Debug($"Copying path to clipboard: {filename} - {fullpath}");
             System.Windows.Forms.Clipboard.SetText(filename);
           }
 
@@ -493,7 +498,7 @@ namespace ZusiObjektAlbum
       }
       catch (Exception ex)
       {
-        Log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
+        _log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
         MessageBox.Show(this, ex.Message, "Fehler beim Kopieren des Pfads", MessageBoxButton.OK, MessageBoxImage.Error);
       }
     }
@@ -563,6 +568,7 @@ namespace ZusiObjektAlbum
 
             DataPathType dtp = DataPathType.Unknown;
             string filename = fullpath; // Zusi.GetRelativePathOf(fullpath, ref dtp);
+            _log.Debug($"Copying pathfilename to clipboard: {filename}");
             System.Windows.Forms.Clipboard.SetText(filename);
           }
 
@@ -570,7 +576,7 @@ namespace ZusiObjektAlbum
       }
       catch (Exception ex)
       {
-        Log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
+        _log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
         MessageBox.Show(this, ex.Message, "Fehler beim Kopieren des Pfads", MessageBoxButton.OK, MessageBoxImage.Error);
       }
     }
@@ -756,7 +762,7 @@ namespace ZusiObjektAlbum
       }
       catch (Exception ex)
       {
-        Log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
+        _log.Error("Fehler beim Kopieren des Pfads in die Zwischenablage", ex);
         MessageBox.Show(this, ex.Message, "Fehler beim Kopieren des Pfads", MessageBoxButton.OK, MessageBoxImage.Error);
       }
     }

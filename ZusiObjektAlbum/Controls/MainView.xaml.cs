@@ -428,7 +428,7 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
     {
       MessageBox.Show(
           Window.GetWindow(this),
-          $"Es wurde noch kein REMbg-Modell gefunden unter:\n{u2netPath}\n\n" +
+          $"Es wurde noch kein Hintergrunderkennungsmodell (REMbg-Modell) gefunden unter:\n{u2netPath}\n\n" +
           "Bitte zuerst über \"Tools \u2192 Hintergrunderkennung-Modell von GitHub herunterladen...\" das Modell herunterladen.",
           "Kein Hintergrunderkennung-Modell vorhanden",
           MessageBoxButton.OK,
@@ -594,10 +594,11 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
     {
       MessageBox.Show(
           Window.GetWindow(this),
-          $"Es wurde noch keine index.bin gefunden unter:\n{indexPath}\n\n" +
-          "Bitte zuerst über \"Tools \u2192 Index objects\" die Objektdatenbank indizieren.\n"+
-          "oder über \"Tools \u2192 Index von Github herunerladen\" den Objektindex herunterladen.",
-          "Kein Index vorhanden",
+          $"Es wurde noch keine Datei mit den Fingerabdrücken der 3D-Modelle gefunden unter:\n{indexPath}\n\n" +
+          "Sie können die Fingerabdruck-Datei selbst erstellen oder eine fertige Fingerabdruck-Datei von Github herunterladen.\n" +
+          "Zum Selbsterstellen bitte über \"Tools \u2192 Fingerabdruck-Datei der 3D-Objekte selbst erstellen bzw. updaten...\" die Fingerabdrücke erzeugen (dauert ca 1-2 Stunden).\n" +
+          "oder über \"Tools \u2192 Fingerabdruck-Datei der 3D-Objekte von GitHub herunterladen...\" die aktuelle Fingerabdruckdatei herunterladen.",
+          "Keine Fingerabdruck-Datei vorhanden",
           MessageBoxButton.OK,
           MessageBoxImage.Warning);
       return;

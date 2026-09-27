@@ -63,6 +63,12 @@
     <!-- ===================== Linke Spalte ===================== -->
     <StackPanel Grid.Row="0">
 
+      <TextBlock Text="Die Ähnlichkeitssuche ermöglicht es zu Fotos von realen Objekten ähnliche 3D-Modelle aus dem Bestand zu finden." TextWrapping="Wrap" FontSize="12" Margin="0,0,0,8" />
+      <TextBlock Text="Vorraussetzungen für die Ähnlichkeitssuche:" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,8" />
+      <TextBlock Text="Von jedem 3D-Modell wird ein sogenannter Fingerabdruck benötigt. Um diesen Fingerabdruck zu erstellen wird ein KI-Modell verwendet. Diese Modell (DinoV2) muß einmal heruntergeladen werden." TextWrapping="Wrap" FontSize="12" Margin="0,0,0,8" />
+      <TextBlock Text="Den Fingerabdruck kann man selbst erstellen oder von Github herunterladen. Sollte es danach Änderungen an 3D-Modellen geben, kann man die Fingerabdruckdatei auch updaten." TextWrapping="Wrap" FontSize="12" Margin="0,0,0,8" />
+      <TextBlock Text="Die Funktionen sind im Tools-Menu zu finden." TextWrapping="Wrap" FontSize="12" Margin="0,0,0,8" />
+
       <TextBlock Text="Foto des realen Objekts" FontWeight="Bold" FontSize="14" Margin="0,24,0,8" />
 
       <!-- Drag & Drop-Bereich -->

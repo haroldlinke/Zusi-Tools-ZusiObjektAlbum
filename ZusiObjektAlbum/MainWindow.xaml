@@ -59,10 +59,11 @@
         </LinearGradientBrush>
       </Control.Background>
       <MenuItem Header="_Tools">
-        <MenuItem x:Name="MenuItemOptions" Command="{x:Static local:MainWindow.CommandIndexObjects}" />
-        <MenuItem Header="Dinov2-Modell von GitHub herunterladen..." Click="OnDownloadModel"/>
+        <!--<MenuItem x:Name="MenuItemOptions" Command="{x:Static local:MainWindow.CommandIndexObjects}" />-->
+        <MenuItem Header="Fingerabdruck-Datei der 3D-Objekte selbst erstellen bzw. updaten..." Click="OnIndexObjects2"/>
+        <MenuItem Header="Fingerabdruck-Datei der 3D-Objekte von GitHub herunterladen..." Click="OnDownloadIndex"/>
+        <MenuItem Header="Dinov2-Modell für Fingerabdruckerstellung von GitHub herunterladen..." Click="OnDownloadModel"/>
         <MenuItem Header="Hintergrunderkennung-Modell von GitHub herunterladen..." Click="OnDownloadRemBgModel"/>
-        <MenuItem Header="Index von GitHub herunterladen..." Click="OnDownloadIndex"/>
       </MenuItem>
     </Menu>
 
