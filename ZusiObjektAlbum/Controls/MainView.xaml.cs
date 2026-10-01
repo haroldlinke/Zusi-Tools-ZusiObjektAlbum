@@ -1,3 +1,4 @@
+using log4net;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -29,6 +30,8 @@ public sealed class QueryPhoto
 
 public partial class MainView : UserControl
 {
+  private static readonly ILog _log = LogManager.GetLogger(typeof(MainView));
+
   private static readonly string[] SupportedPhotoExtensions = { ".jpg", ".jpeg", ".png", ".bmp" };
   private static readonly string[] SupportedThumbnailExtensions = { ".png", ".jpg", ".jpeg" };
 
@@ -326,6 +329,7 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       {
         photo.Preview = photo.Original;
         StatusText.Text = $"Hintergrundentfernung fehlgeschlagen: {ex.Message}";
+        _log.Debug($"Hintergrundentfernung fehlgeschlagen für {photo.Label}: {ex}");
       }
     }
 
@@ -604,6 +608,8 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       return;
     }
 
+    _log.Debug($"Starte Suche mit Modell {modelPath} und Index {indexPath} für {_queryPhotos.Count} Foto(s).");
+
     SetBusy(true);
     _results.Clear();
 
@@ -613,6 +619,7 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       if (_embedder is null)
       {
         StatusText.Text = "Lade ONNX-Modell...";
+        _log.Debug($"Lade ONNX-Modell aus {modelPath}");
         //_embedder = await Task.Run(() => new ClipEmbedder(modelPath));
         _embedder = await Task.Run(() => new Dinov2Embedder(modelPath));
       }
@@ -621,6 +628,7 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       if (_index is null || indexFileTime > _indexLoadedAt)
       {
         StatusText.Text = "Lade Embedding-Index...";
+        _log.Debug($"Lade Embedding-Index aus {indexPath}");
         _index = await Task.Run(() => EmbeddingIndex.LoadFromFile(indexPath));
         _indexLoadedAt = indexFileTime;
       }
@@ -628,19 +636,17 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       foreach (var photo in _queryPhotos)
       {
         StatusText.Text = $"Berechne Embedding ({embeddings.Count + 1}/{_queryPhotos.Count})...";
+        _log.Debug($"Berechne Embedding für {photo.Label}");
         embeddings.Add(await Task.Run(() => _embedder.ComputeEmbedding(photo.Preview)));
       }
 
       StatusText.Text = "Suche ähnliche Objekte...";
+      _log.Debug($"Suche ähnliche Objekte für {_queryPhotos.Count} Embeddings");
       var matches = await Task.Run(() => _index.SearchMulti(embeddings, topN: 100));
+      _log.Debug($"Suche abgeschlossen, {matches.Count} Treffer gefunden");
 
       foreach (var match in matches)
       {
-        //check if keyword filter is set and if so, check if the object has the keyword - moved this to the searchMulti method in EmbeddingIndex.cs
-        //if (DataManager.Instance.MatchesKeywords(match.ObjectId) == false)
-        //{
-        //  continue;
-        //}
         // replace zusi path saved in index.bin with local zusi path
         string local_sourcePath = "";
         if (match.SourcePath.StartsWith(DataManager.Instance.objectsFolder)) // correct sourcepath to real source path of current ZUSI installation
@@ -654,7 +660,7 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
           local_sourcePath = match.SourcePath;
         }
         string? thumbnail = FindThumbnail(objectsFolder, match.ObjectId, match.BestView);
-
+        //_log.Debug($"Treffer: {match.ObjectId}, Score: {match.Score}, BestView: {match.BestView}, SourcePath: {local_sourcePath}, Thumbnail: {thumbnail}");
         _results.Add(new ResultItem
         {
           ObjectId = match.ObjectId.Substring(0,match.ObjectId.Length-9), // remove hash
@@ -666,6 +672,7 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       }
 
       StatusText.Text = $"Fertig - {matches.Count} Treffer gefunden.";
+      _log.Debug($"Fertig - {matches.Count} Treffer gefunden.");
     }
     catch (Exception ex)
     {
@@ -678,6 +685,14 @@ private DateTime _indexLoadedAt = DateTime.MinValue;
       StatusText.Text = "Fehler - siehe Meldung.";
       MessageBox.Show(Application.Current?.MainWindow, ex.Message, "Fehler bei der Suche",
           MessageBoxButton.OK, MessageBoxImage.Error);
+      _log.Debug($"Fehler bei der Suche: {ex}");
+      _log.Error(ex.ToString());
+      if (ex.InnerException != null)
+      {
+        _log.Fatal("Inner Exception:");
+        _log.Fatal(ex.InnerException.ToString);
+        _log.Fatal(ex.InnerException.StackTrace);
+      }
     }
     finally
     {

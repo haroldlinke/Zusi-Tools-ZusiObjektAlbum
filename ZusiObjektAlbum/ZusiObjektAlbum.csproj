@@ -21,6 +21,9 @@
 
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Resources\mainicon.ico" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="DDSLib, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\DDSLib.6.2.0\lib\net48\DDSLib.dll</HintPath>
     </Reference>
@@ -83,6 +86,7 @@
     </None>
     <None Include="App.config" />
     <Resource Include="mainicon.ico" />
+    <Resource Include="Resources\mainicon.ico" />
   </ItemGroup>
 
   <ItemGroup>

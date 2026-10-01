@@ -1,3 +1,4 @@
+using log4net;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using System;
@@ -10,6 +11,8 @@ namespace ZusiObjektAlbum.Core;
 
 public sealed class Dinov2Embedder : IImageEmbedder
 {
+  private static readonly ILog _log = LogManager.GetLogger(typeof(Dinov2Embedder));
+
   private const string InputName = "input"; // mit netron.app prüfen
   private const int ImageSize = 224; // manche DINOv2-Exporte nutzen 518 - prüfen!
 
@@ -28,17 +31,20 @@ public sealed class Dinov2Embedder : IImageEmbedder
 
   public float[] ComputeEmbedding(string imagePath)
   {
+    _log.Debug($"Computing embedding for image: {imagePath}");
     BitmapSource bitmap = ImageFileLoader.Load(imagePath);
     return ComputeEmbedding(bitmap);
   }
 
   public float[] ComputeEmbedding(BitmapSource source)
   {
+    _log.Debug($"Computing embedding for BitmapSource: {source.PixelWidth}x{source.PixelHeight}");
     return RunAndNormalize(PreprocessBitmapSource(source));
   }
 
   private float[] RunAndNormalize(DenseTensor<float> tensor)
   {
+    _log.Debug($"Running inference on tensor: {tensor.Dimensions[0]}x{tensor.Dimensions[1]}x{tensor.Dimensions[2]}x{tensor.Dimensions[3]}");
     var inputs = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor(InputName, tensor) };
     using var results = _session.Run(inputs);
 
@@ -73,6 +79,7 @@ public sealed class Dinov2Embedder : IImageEmbedder
 
   private static DenseTensor<float> PreprocessBitmapSource(BitmapSource source)
   {
+    _log.Debug($"Preprocessing BitmapSource: {source.PixelWidth}x{source.PixelHeight}");
     double scaleX = (double)ImageSize / source.PixelWidth;
     double scaleY = (double)ImageSize / source.PixelHeight;
     var resized = new TransformedBitmap(source, new ScaleTransform(scaleX, scaleY));
@@ -98,6 +105,7 @@ public sealed class Dinov2Embedder : IImageEmbedder
 
   private static float[] Normalize(float[] vector)
   {
+    _log.Debug($"Normalizing vector of length: {vector.Length}");
     double sumSquares = 0.0;
     foreach (float v in vector) sumSquares += v * v;
     double norm = Math.Sqrt(sumSquares);

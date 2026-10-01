@@ -172,6 +172,7 @@ namespace ZusiObjektAlbum
     //---------------------------------------------------------------------
     private void ObjectView_EditCompleted(object sender, EditCompletedEventArgs e)
     {
+      _log.Debug($"ObjectView_EditCompleted: OldValue='{e.OldValue}', NewValue='{e.NewValue}', DiscardChanges={e.DiscardChanges}");
       string newValue = e.NewValue?.Trim();
       if (string.IsNullOrEmpty(newValue) || newValue.IndexOfAny(ValidateSectionName.ForbiddenChars) > -1 || newValue.IndexOf('/') > -1)
       {
@@ -293,6 +294,7 @@ namespace ZusiObjektAlbum
     //---------------------------------------------------------------------
     private void OnRemoveObject(object sender, ExecutedRoutedEventArgs e)
     {
+      _log.Debug($"OnRemoveObject: Parameter={e.Parameter}");
       if (e.Parameter is ObjectModel om)
       {
         if (om.Object is Landschaft ls)
@@ -313,6 +315,7 @@ namespace ZusiObjektAlbum
     //---------------------------------------------------------------------
     private void CleanUpSection(ObjectModel om)
     {
+      _log.Debug($"CleanUpSection: {om.DisplayName}");
       if (om.Children.Count == 0)
       {
         ObjectModel papa = om.Parent;
@@ -351,6 +354,7 @@ namespace ZusiObjektAlbum
     }
     private async void OnIndexObjects2(object sender, RoutedEventArgs e)
     {
+      _log.Debug("OnIndexObjects2: Starting indexing process...");
       string? imageFolder = null; // "D:\\Zusi\\ObjectImages";
       string onnxModel = DataManager.Instance.modelPath;
       string indexFile = DataManager.Instance.indexPath;
@@ -392,6 +396,7 @@ namespace ZusiObjektAlbum
 
       try
       {
+        _log.Debug("OnIndexObjects2: Exporting and indexing all images...");
         await ZusiObjektAlbum.Similaritysearch.BatchImageExporter.ExportAndIndexAllAsync(
             imageFolder, onnxModel, indexFile, progress, _exportCts.Token, DataManager.Instance.Objects);
 
@@ -414,6 +419,7 @@ namespace ZusiObjektAlbum
         CommandManager.InvalidateRequerySuggested(); // Menüpunkt wieder freigeben
       }
 
+      _log.Debug($"OnIndexObjects2: Indexing process completed. Was cancelled: {wasCancelled}");
       MessageBox.Show(this,
           wasCancelled ? "Export wurde abgebrochen (Fortschritt wurde gespeichert)." : "Export & Indexierung abgeschlossen.",
           "Fertig", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -421,6 +427,7 @@ namespace ZusiObjektAlbum
 
     private void BtnCancelIndexing_Click(object sender, RoutedEventArgs e)
     {
+      _log.Debug("BtnCancelIndexing_Click: Cancelling indexing process...");
       _exportCts?.Cancel();
       btnCancelIndexing.IsEnabled = false; // verhindert Mehrfachklick, Abbruch braucht evtl. noch einen Moment
     }
@@ -445,17 +452,34 @@ namespace ZusiObjektAlbum
     {
       try
       {
+        _log.Debug($"OnCopyPathToClipboard: Parameter={e.Parameter}, Source={e.Source}, OriginalSource={e.OriginalSource}");
         ILandscapeObject ll = null;
         if (e.Parameter == null)
         {
-          if (tvObjects.SelectedItem is ObjectModel om && om.Object is ILandscapeObject lo)
+          if (e.Source is Controls.MainView mv && mv.DataContext != null)
           {
-            ll = lo;
+            if (DataManager.Instance.SelectedObject is MVVM.Zusi3DModel mo && mo.ObjectModel is ObjectModel om1 && om1.Object is ZusiKlassenLib.Landscape.Landschaft lo1)
+            {
+              _log.Debug($"OnCopyPathToClipboard DataManager.Instance.SelectedObject: Found landscape object: {lo1}");
+              ll = lo1;
+            }
+          }
+          else
+          {
+            if (tvObjects.SelectedItem is ObjectModel om && om.Object is ILandscapeObject lo)
+            {
+              _log.Debug($"OnCopyPathToClipboard tvObjects.SelectedItem: Found landscape object: {lo}");
+              ll = lo;
+            }
           }
         }
-        else if (e.Parameter is ObjectModel om && om.Object is ILandscapeObject lo)
+        else
         {
-          ll = lo;
+          if (e.Parameter is ObjectModel om && om.Object is ILandscapeObject lo)
+          {
+            _log.Debug($"OnCopyPathToClipboard e.Parameter: Found landscape object: {lo}");
+            ll = lo;
+          }
         }
         string fullpath = null;
         if (ll != null)
@@ -477,15 +501,17 @@ namespace ZusiObjektAlbum
           }
           else
           {
+            _log.Debug($"OnCopyPathToClipboard: Copying filename to clipboard: {filename}");
             System.Windows.Forms.Clipboard.SetText(filename);
           }
         }
         else
         {
           // similarity search resultitem
-
+          _log.Debug($"OnCopyPathToClipboard: No landscape object found, checking if OriginalSource is a ResultItem...");
           if (e.OriginalSource is ListBoxItem lm && lm.DataContext is ResultItem resultItem)
           {
+            _log.Debug($"OnCopyPathToClipboard: Found ResultItem: {resultItem.ObjectId}, Score: {resultItem.Score}, SourcePath: {resultItem.SourcePath}");
             fullpath = resultItem.SourcePath;
 
             DataPathType dtp = DataPathType.Unknown;
@@ -523,16 +549,33 @@ namespace ZusiObjektAlbum
     {
       try
       {
+        _log.Debug($"OnCopyFilenamePathToClipboard: Parameter={e.Parameter}, Source={e.Source}, OriginalSource={e.OriginalSource}");
         ILandscapeObject ll = null;
         if (e.Parameter == null)
         {
-          if (tvObjects.SelectedItem is ObjectModel om && om.Object is ILandscapeObject lo)
+          if (e.Source is Controls.MainView mv && mv.DataContext != null)
           {
-            ll = lo;
+            _log.Debug($"OnCopyFilenamePathToClipboard: Checking MainView DataContext...");
+            if (DataManager.Instance.SelectedObject is MVVM.Zusi3DModel mo && mo.ObjectModel is ObjectModel om1 && om1.Object is ZusiKlassenLib.Landscape.Landschaft lo1)
+            {
+              _log.Debug($"OnCopyFilenamePathToClipboard: Found landscape object in MainView DataContext: {lo1}");
+              ll = lo1;
+            }
+          }
+          else
+          {
+
+
+            if (tvObjects.SelectedItem is ObjectModel om && om.Object is ILandscapeObject lo)
+            {
+              _log.Debug($"OnCopyFilenamePathToClipboard: Found landscape object in TreeView: {lo}");
+              ll = lo;
+            }
           }
         }
         else if (e.Parameter is ObjectModel om && om.Object is ILandscapeObject lo)
         {
+          _log.Debug($"OnCopyFilenamePathToClipboard: Found landscape object in Parameter: {lo}");
           ll = lo;
         }
         string fullpath = null;
@@ -555,15 +598,17 @@ namespace ZusiObjektAlbum
           }
           else
           {
+            _log.Debug($"OnCopyFilenamePathToClipboard: Setting clipboard text: {filename}");
             System.Windows.Forms.Clipboard.SetText(filename);
           }
         }
         else
         {
           // similarity search resultitem
-
+          _log.Debug($"OnCopyFilenamePathToClipboard: No landscape object found, checking if OriginalSource is a ResultItem...");
           if (e.OriginalSource is ListBoxItem lm && lm.DataContext is ResultItem resultItem)
           {
+            _log.Debug($"OnCopyFilenamePathToClipboard: Found ResultItem: {resultItem.ObjectId}, Score: {resultItem.Score}, SourcePath: {resultItem.SourcePath}");
             fullpath = resultItem.SourcePath;
 
             DataPathType dtp = DataPathType.Unknown;
@@ -638,7 +683,7 @@ namespace ZusiObjektAlbum
     private async void OnDownloadModel(object sender, RoutedEventArgs e)
     {
       string onnxModel = DataManager.Instance.modelPath;
-      
+
       var progressWindow = new DownloadProgressWindow { Owner = this };
       progressWindow.Show();
 
@@ -734,7 +779,7 @@ namespace ZusiObjektAlbum
         {
           ll = lo;
         }
-        
+
         if (ll != null)
         {
 
@@ -749,15 +794,15 @@ namespace ZusiObjektAlbum
 
         }
 
-      if (string.IsNullOrEmpty(fullpath) || !System.IO.File.Exists(fullpath))
-      {
-        return;
-      }
+        if (string.IsNullOrEmpty(fullpath) || !System.IO.File.Exists(fullpath))
+        {
+          return;
+        }
 
-      // Exakt das Format, das Explorer beim Datei-Ziehen erzeugt (CF_HDROP) -
-      // jede Anwendung, die Drag&Drop vom Explorer akzeptiert, akzeptiert das auch.
-      var dataObject = new DataObject(DataFormats.FileDrop, new[] { fullpath });
-      DragDrop.DoDragDrop(element, dataObject, DragDropEffects.Copy);
+        // Exakt das Format, das Explorer beim Datei-Ziehen erzeugt (CF_HDROP) -
+        // jede Anwendung, die Drag&Drop vom Explorer akzeptiert, akzeptiert das auch.
+        var dataObject = new DataObject(DataFormats.FileDrop, new[] { fullpath });
+        DragDrop.DoDragDrop(element, dataObject, DragDropEffects.Copy);
 
       }
       catch (Exception ex)

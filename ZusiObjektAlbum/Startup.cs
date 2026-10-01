@@ -272,7 +272,7 @@ namespace ZusiObjektAlbum
       _log.Info(" ");
       _log.Info("**************************************************************************");
       _log.Info("*");
-      _log.Info("* ZusiStart started - Version:" + AsmInfo.Version.ToString());
+      _log.Info("* ZusiObjektAlbum started - Version:" + AsmInfo.Version.ToString());
       _log.Info("*");
       _log.Info("*test*************************************************************************");
       _log.Debug("Debug level enabled");
@@ -290,11 +290,11 @@ namespace ZusiObjektAlbum
         create_Registry_entry_HKUS(); // if program runs as administrator menu has to be added to all users
 
         // determine icon path
-        string icon_path = Path.Combine(Path.GetDirectoryName(executablePath), @"Resources\zusistart.ico");
+        string icon_path = Path.Combine(Path.GetDirectoryName(executablePath), @"Resources\zusiobjectalbum.ico");
 
         // Call the method to create the shortcut
-        //ShortcutCreator.CreateShortcutOnDesktop("ZusiStart", executablePath, icon_path);
-        //ShortcutCreator.CreateShortcutInQuickLaunch("ZusiStart", executablePath, icon_path);
+        //ShortcutCreator.CreateShortcutOnDesktop("ZusiObjektAlbum", executablePath, icon_path);
+        //ShortcutCreator.CreateShortcutInQuickLaunch("ZusiObjektAlbum", executablePath, icon_path);
       //}
       //else
       //{

@@ -1,8 +1,10 @@
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using ZusiObjektAlbum.Controls;
 using ZusiObjektAlbum.MVVM;
 
 namespace ZusiObjektAlbum.Core;
@@ -24,6 +26,8 @@ public readonly record struct SearchHit(string ObjectId, float Score, string Bes
 /// </summary>
 public sealed class EmbeddingIndex
 {
+  private static readonly ILog _log = LogManager.GetLogger(typeof(EmbeddingIndex));
+
   // Bei Änderungen am Binärformat (z.B. neues Feld) IMMER erhöhen - alte
   // Indexdateien mit anderer Version werden dann bewusst abgelehnt, statt
   // im besten Fall falsch oder im schlimmsten Fall gar nicht zu laden.
@@ -70,6 +74,7 @@ public sealed class EmbeddingIndex
   /// </summary>
   public IReadOnlyList<SearchHit> Search(float[] query, int topN)
   {
+    _log.Debug($"Search: {query.Length}D-Vektor, topN={topN}, Keyword-Filter: {DataManager.Instance.SelectedKeywords}");
     return ComputeBestPerObject(query)
         .Select(kv => new SearchHit(kv.Key, kv.Value.Score, kv.Value.View, kv.Value.SourcePath))
         .OrderByDescending(x => x.Score)
@@ -90,6 +95,8 @@ public sealed class EmbeddingIndex
   /// </summary>
   public IReadOnlyList<SearchHit> SearchMulti(IReadOnlyList<float[]> queries, int topN)
   {
+    
+    _log.Debug($"SearchMulti: {queries.Count} Queries, topN={topN}, Keyword-Filter: {DataManager.Instance.SelectedKeywords}");
     if (queries.Count == 0)
     {
       return Array.Empty<SearchHit>();
@@ -106,6 +113,7 @@ public sealed class EmbeddingIndex
     {
       foreach (var (objectId, data) in ComputeBestPerObject(query))
       {
+        _log.Debug($"SearchMulti: {objectId}, Score: {data.Score}, View: {data.View}, SourcePath: {data.SourcePath}");
         if (combined.TryGetValue(objectId, out var current))
         {
           bool isNewBest = data.Score > current.BestSingleScore;
@@ -122,7 +130,7 @@ public sealed class EmbeddingIndex
         }
       }
     }
-
+    _log.Debug($"SearchMulti: Combined results count: {combined.Count}");
     return combined
         .Select(kv => new SearchHit(kv.Key, kv.Value.TotalScore / kv.Value.Count, kv.Value.View, kv.Value.SourcePath))
         .OrderByDescending(x => x.Score)
@@ -135,6 +143,7 @@ public sealed class EmbeddingIndex
   {
     var bestPerObject = new Dictionary<string, (float Score, string View, string SourcePath)>();
 
+    //_log.Debug($"ComputeBestPerObject: {query.Length}D-Vektor, Keyword-Filter: {DataManager.Instance.SelectedKeywords}");
     foreach (var entry in _entries)
     {
       //check if keyword filter is set and if so, check if the object has the keyword
@@ -142,7 +151,7 @@ public sealed class EmbeddingIndex
       {
         continue;
       }
-
+      //_log.Debug($"ComputeBestPerObject: Comparing query with ObjectId: {entry.ObjectId}, View: {entry.ViewName}, SourcePath: {entry.SourcePath}");
       float score = CosineSimilarity(query, entry.Vector);
 
       if (!bestPerObject.TryGetValue(entry.ObjectId, out var current) || score > current.Score)
@@ -182,6 +191,7 @@ public sealed class EmbeddingIndex
     // bei einem Absturz/Abbruch mitten im Speichern (z.B. während des
     // periodischen Zwischenspeicherns über 12.000 Objekte) nicht die
     // vorhandene, funktionierende index.bin beschädigt zurückbleibt.
+    _log.Debug($"Saving EmbeddingIndex to file: {path}, FormatVersion: {FormatVersion}, Entries: {_entries.Count}");
     string tempPath = path + ".tmp";
 
     using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
@@ -204,12 +214,14 @@ public sealed class EmbeddingIndex
 
     File.Copy(tempPath, path, overwrite: true);
     File.Delete(tempPath);
+    _log.Debug($"EmbeddingIndex saved to file: {path}");
   }
 
   public static EmbeddingIndex LoadFromFile(string path)
   {
     var index = new EmbeddingIndex();
 
+    _log.Debug($"Loading EmbeddingIndex from file: {path}");
     using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
     using var br = new BinaryReader(fs);
 
@@ -238,6 +250,7 @@ public sealed class EmbeddingIndex
       index.Add(new ViewEmbedding(objectId, viewName, vector, sourcePath));
     }
 
+    _log.Debug($"EmbeddingIndex loaded from file: {path}");
     return index;
   }
 }
